@@ -17,20 +17,13 @@ runs:
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Install EvalGate (local)
+    - name: Run EvalGate (PyPI)
       shell: bash
       run: |
-        uv venv .action-venv
-        source .action-venv/bin/activate
-        uv pip install -e .
-        echo "$(pwd)/.action-venv/bin" >> $GITHUB_PATH
-    - name: Run EvalGate (local)
-      shell: bash
-      run: |
-        evalgate run --config "${{ inputs.config }}"
+        uvx --from evalgate evalgate run --config "${{ inputs.config }}"
     - name: Summary
       if: always()
       shell: bash
       run: |
-        evalgate report --summary --artifact ./.evalgate/results.json
+        uvx --from evalgate evalgate report --summary --artifact ./.evalgate/results.json
 
