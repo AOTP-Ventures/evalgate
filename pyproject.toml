@@ -1,0 +1,31 @@
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evalgate"
+version = "0.1.0"
+description = "Deterministic LLM/RAG evals as a PR check"
+readme = "README.md"
+authors = [{ name = "AOTP Ventures", email = "team@aotp.ventures" }]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+  "typer>=0.12",
+  "pydantic>=2.7",
+  "pyyaml>=6.0",
+  "jsonschema>=4.21",
+  "rich>=13.8"
+]
+
+[project.urls]
+Homepage = "https://evalgate.aotp.ai/"
+Repository = "https://github.com/aotp-ventures/evalgate"
+
+[project.scripts]
+evalgate = "evalgate.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

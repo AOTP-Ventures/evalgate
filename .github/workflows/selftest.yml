@@ -1,0 +1,28 @@
+# .github/workflows/selftest.yml
+name: EvalGate Selftest
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      # Generate outputs from fixtures so the action has something to evaluate
+      - name: Generate outputs
+        run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
+
+      # Run the action from this repo (installs uv, runs evalgate, prints summary)
+      - name: Run EvalGate (local action)
+        uses: ./
+        with:
+          config: .github/evalgate.yml

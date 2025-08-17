@@ -1,0 +1,29 @@
+
+name: "AOTP EvalGate"
+description: "Run deterministic LLM/RAG evals as a PR check"
+author: "AOTP Ventures"
+branding: { icon: "check-square", color: "blue" }
+
+inputs:
+  config:
+    description: "Path to evalgate YAML config"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      shell: bash
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Run EvalGate (uvx)
+      shell: bash
+      run: |
+        uvx --from evalgate evalgate run --config "${{ inputs.config }}"
+    - name: Summary
+      if: always()
+      shell: bash
+      run: |
+        uvx --from evalgate evalgate report --summary --artifact ./.evalgate/results.json
+

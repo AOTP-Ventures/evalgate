@@ -1,0 +1,30 @@
+{
+  "overall": 1.0,
+  "scores": [
+    {
+      "name": "json_formatting",
+      "score": 1.0,
+      "delta": null
+    },
+    {
+      "name": "priority_accuracy",
+      "score": 1.0,
+      "delta": null
+    },
+    {
+      "name": "latency_cost",
+      "score": 1.0,
+      "delta": null
+    }
+  ],
+  "failures": [],
+  "latency": 950.0,
+  "cost": 0.0105,
+  "gate": {
+    "min_overall_score": 0.9,
+    "allow_regression": false,
+    "passed": true
+  },
+  "regression_ok": true,
+  "artifact_path": ".evalgate/results.json"
+}

@@ -1,0 +1,13 @@
+
+budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
+fixtures: { path: "eval/fixtures/**/*.json" }
+outputs:  { path: ".evalgate/outputs/**/*.json" }
+evaluators:
+  - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.4 }
+  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.4 }
+  - { name: latency_cost, type: budgets, weight: 0.2 }
+gate: { min_overall_score: 0.90, allow_regression: false }
+report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
+baseline: { ref: "origin/main" }
+telemetry: { mode: "local_only" }
+
