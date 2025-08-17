@@ -18,6 +18,14 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Install EvalGate (local)
+        shell: bash
+        run: |
+          uv venv .evalgate-venv
+          source .evalgate-venv/bin/activate
+          uv pip install -e .
+          echo "$(pwd)/.evalgate-venv/bin" >> $GITHUB_PATH
+
       # Your step: generate outputs for fixtures
       - name: Generate outputs
         shell: bash
@@ -30,21 +38,21 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          uvx --from evalgate evalgate run --config .github/evalgate.yml
+          evalgate run --config .github/evalgate.yml
 
       # Write to the PR summary panel
       - name: EvalGate Summary
         if: always()
         shell: bash
         run: |
-          uvx --from evalgate evalgate report --summary --artifact ./.evalgate/results.json
+          evalgate report --summary --artifact ./.evalgate/results.json
 
       # Render markdown to a file for a sticky PR comment
       - name: Render EvalGate to file
         if: always()
         shell: bash
         run: |
-          uvx --from evalgate evalgate report --artifact ./.evalgate/results.json > evalgate.md
+          evalgate report --artifact ./.evalgate/results.json > evalgate.md
 
       # Create or update a single sticky PR comment (identified by a hidden marker)
       - name: Comment on PR (sticky)
