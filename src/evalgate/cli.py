@@ -134,10 +134,24 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
 
     scores = []
     failures = []
+    evaluator_errors = []  # Track configuration/runtime errors separately
     latency = cost = None
 
     for ev in cfg.evaluators:
         if not ev.enabled: continue
+        
+        # Check for missing required fields upfront
+        if ev.type == "llm":
+            if not ev.prompt_path:
+                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: prompt_path")
+                continue
+            if not ev.provider:
+                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: provider")
+                continue
+            if not ev.model:
+                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
+                continue
+        
         if ev.type == "schema":
             schema = read_json(ev.schema_path) if ev.schema_path else {}
             s, v = ev_schema.evaluate(o_map, schema)
@@ -149,16 +163,7 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 "max_cost_usd_per_item": cfg.budgets.max_cost_usd_per_item
             })
         elif ev.type == "llm":
-            if not ev.prompt_path:
-                rprint(f"[red]prompt_path required for LLM evaluator: {ev.name}[/red]")
-                continue
-            if not ev.provider:
-                rprint(f"[red]provider required for LLM evaluator: {ev.name}[/red]")
-                continue
-            if not ev.model:
-                rprint(f"[red]model required for LLM evaluator: {ev.name}[/red]")
-                continue
-            
+            # Required field validation already done above
             try:
                 s, v = ev_llm.evaluate(
                     outputs=o_map,
@@ -173,10 +178,9 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 )
             except Exception as e:
                 rprint(f"[red]LLM evaluator {ev.name} failed: {e}[/red]")
-                # Add failed evaluator to results with 0.0 score so it's visible
-                s, v = 0.0, [f"Evaluator failed: {str(e)}"]
-                scores.append({"name": ev.name, "score": float(s), "weight": ev.weight, "failed": True})
-                failures.extend(v)
+                # Track this as an evaluator error, not just a low score
+                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
+                # Don't add to scores - failed evaluators shouldn't contribute to scoring
                 continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
@@ -199,15 +203,22 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     if deltas and not cfg.gate.allow_regression:
         regression_ok = all((d >= -1e-6) for d in deltas.values())
 
-    passed = overall >= cfg.gate.min_overall_score and regression_ok
+    # Fail the gate if any evaluators failed to run
+    evaluators_ok = len(evaluator_errors) == 0
+    if not evaluators_ok:
+        rprint(f"[red]Gate failed: {len(evaluator_errors)} evaluator(s) failed to run[/red]")
+    
+    passed = overall >= cfg.gate.min_overall_score and regression_ok and evaluators_ok
     result = {
         "overall": overall,
         "scores": [{"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])} for x in scores],
         "failures": failures,
+        "evaluator_errors": evaluator_errors,  # Separate from test failures
         "latency": latency,
         "cost": cost,
         "gate": {"min_overall_score": cfg.gate.min_overall_score, "allow_regression": cfg.gate.allow_regression, "passed": passed},
         "regression_ok": regression_ok,
+        "evaluators_ok": evaluators_ok,
         "artifact_path": cfg.report.artifact_path,
     }
 
