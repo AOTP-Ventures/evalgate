@@ -39,7 +39,5 @@ def render_markdown(result: Dict[str, Any]) -> str:
         f"- min_overall_score: {result['gate']['min_overall_score']} → {'✅' if result['overall'] >= result['gate']['min_overall_score'] else '❌'}",
         f"- allow_regression: {result['gate']['allow_regression']} → {'✅' if (result.get('regression_ok', True)) else '❌'}",
         f"- evaluators_ok: → {'✅' if result.get('evaluators_ok', True) else '❌'}",
-        "",
-        f"Artifacts: `{result['artifact_path']}`",
     ]
     return "\n".join(lines)
