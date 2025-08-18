@@ -39,4 +39,11 @@ runs:
       shell: bash
       run: |
         uvx --from evalgate evalgate report --summary --artifact ./.evalgate/results.json
+    - name: Upload Results Artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: evalgate-results
+        path: .evalgate/results.json
+        retention-days: 30
 

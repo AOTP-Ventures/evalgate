@@ -84,6 +84,15 @@ jobs:
         run: |
           uv run evalgate report --artifact ./.evalgate/results.json > evalgate-report.md
       
+      # Upload results artifact for debugging
+      - name: Upload EvalGate Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evalgate-results
+          path: .evalgate/results.json
+          retention-days: 30
+      
       # Post unified results as PR comment
       - name: Post EvalGate Selftest Results
         if: github.event_name == 'pull_request' && always()

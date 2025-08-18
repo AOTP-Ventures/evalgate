@@ -163,5 +163,14 @@ Or integrate directly in your existing workflow:
 
 - name: EvalGate Summary
   if: always()
-  run: uvx --from evalgate evalgate report --summary --artifact .evalgate/results.json
+  run: uvx --from evalgate evalgate report --summary --artifact ./.evalgate/results.json
+
+# Optional: Upload detailed results for debugging
+- name: Upload EvalGate Results
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: evalgate-results
+    path: .evalgate/results.json
+    retention-days: 30
 ```
