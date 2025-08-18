@@ -1,0 +1,18 @@
+You are evaluating whether the generated customer support response appropriately matches the sentiment and urgency of the customer's request.
+
+INPUT REQUEST:
+{input}
+
+GENERATED RESPONSE:
+{output}
+
+EXPECTED CHARACTERISTICS:
+{expected}
+
+Rate the response on a scale of 0.0 to 1.0 based on:
+- Sentiment appropriateness
+- Urgency recognition
+- Professional tone
+- Accuracy of information
+
+Score: [your score between 0.0 and 1.0]

@@ -1,16 +1,43 @@
-
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "type":"object",
-  "required":["title","summary","priority","tags","assignee","due_date"],
-  "properties":{
-    "title":{"type":"string","maxLength":80},
-    "summary":{"type":"string"},
-    "priority":{"type":"string","enum":["P0","P1","P2"]},
-    "tags":{"type":"array","items":{"type":"string"}},
-    "assignee":{"type":"string"},
-    "due_date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}"}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "title",
+    "summary",
+    "priority",
+    "tags",
+    "assignee",
+    "due_date"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "summary": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "P0",
+        "P1",
+        "P2"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assignee": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+    }
   },
   "additionalProperties": true
 }
-

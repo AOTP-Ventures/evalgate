@@ -1,0 +1,28 @@
+You are an expert evaluator assessing the quality of customer support ticket classification.
+
+Evaluate the generated output based on these criteria:
+1. Accuracy of priority assignment
+2. Relevance of assigned tags
+3. Appropriateness of assignee selection
+4. Overall coherence and completeness
+
+INPUT:
+{input}
+
+EXPECTED OUTPUT:
+{expected}
+
+GENERATED OUTPUT:
+{output}
+
+Provide a score from 0.0 to 1.0 where:
+- 1.0 = Perfect match with expected output, excellent quality
+- 0.8 = Very good, minor differences acceptable
+- 0.6 = Good, some issues but generally correct
+- 0.4 = Fair, several problems but salvageable
+- 0.2 = Poor, major issues
+- 0.0 = Completely incorrect or missing
+
+Score: [your score]
+
+Justification: [brief explanation of your score]
