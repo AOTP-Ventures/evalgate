@@ -9,6 +9,7 @@ from .util import list_paths, read_json, write_json
 from .evaluators import json_schema as ev_schema
 from .evaluators import category_match as ev_cat
 from .evaluators import latency_cost as ev_budget
+from .evaluators import llm_judge as ev_llm
 from .store import load_baseline
 from .report import render_markdown
 
@@ -21,15 +22,18 @@ def init(path: str = "."):
     (root / ".github").mkdir(parents=True, exist_ok=True)
     (root / "eval" / "fixtures").mkdir(parents=True, exist_ok=True)
     (root / "eval" / "schemas").mkdir(parents=True, exist_ok=True)
+    (root / "eval" / "prompts").mkdir(parents=True, exist_ok=True)
     (root / ".evalgate" / "outputs").mkdir(parents=True, exist_ok=True)
     (root / ".github" / "evalgate.yml").write_text("""# See README for full reference
 budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
 fixtures: { path: "eval/fixtures/**/*.json" }
 outputs:  { path: ".evalgate/outputs/**/*.json" }
 evaluators:
-  - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.4 }
-  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.4 }
+  - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.3 }
+  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.3 }
   - { name: latency_cost, type: budgets, weight: 0.2 }
+  # Uncomment and configure with your API key to enable LLM evaluation:
+  # - { name: content_quality, type: llm, provider: openai, model: "gpt-4", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.2 }
 gate: { min_overall_score: 0.90, allow_regression: false }
 report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
 baseline: { ref: "origin/main" }
@@ -47,13 +51,66 @@ telemetry: { mode: "local_only" }
             "assignee":{"type":"string"},
             "due_date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}"}
         },
-        "additionalProperties": true
+        "additionalProperties": True
     }, indent=2), encoding="utf-8")
     (root / "eval" / "fixtures" / "cx_001.json").write_text(json.dumps({
         "input":{"email_html":"<p>URGENT—refund needed before Friday</p>","thread_context":[]},
         "expected":{"priority":"P1","tags":["billing","refunds"],"assignee":"queue:finance"},
         "meta":{"latency_ms":950,"cost_usd":0.021}
     }, indent=2), encoding="utf-8")
+    
+    # Create example LLM prompt templates
+    (root / "eval" / "prompts" / "quality_judge.txt").write_text("""
+You are an expert evaluator assessing the quality of customer support ticket classification.
+
+Evaluate the generated output based on these criteria:
+1. Accuracy of priority assignment
+2. Relevance of assigned tags
+3. Appropriateness of assignee selection
+4. Overall coherence and completeness
+
+INPUT:
+{input}
+
+EXPECTED OUTPUT:
+{expected}
+
+GENERATED OUTPUT:
+{output}
+
+Provide a score from 0.0 to 1.0 where:
+- 1.0 = Perfect match with expected output, excellent quality
+- 0.8 = Very good, minor differences acceptable
+- 0.6 = Good, some issues but generally correct
+- 0.4 = Fair, several problems but salvageable
+- 0.2 = Poor, major issues
+- 0.0 = Completely incorrect or missing
+
+Score: [your score]
+
+Justification: [brief explanation of your score]
+""", encoding="utf-8")
+    
+    (root / "eval" / "prompts" / "sentiment_judge.txt").write_text("""
+You are evaluating whether the generated customer support response appropriately matches the sentiment and urgency of the customer's request.
+
+INPUT REQUEST:
+{input}
+
+GENERATED RESPONSE:
+{output}
+
+EXPECTED CHARACTERISTICS:
+{expected}
+
+Rate the response on a scale of 0.0 to 1.0 based on:
+- Sentiment appropriateness
+- Urgency recognition
+- Professional tone
+- Accuracy of information
+
+Score: [your score between 0.0 and 1.0]
+""", encoding="utf-8")
     rprint("[green]Initialized example EvalGate files.[/green]")
 
 @app.command()
@@ -91,6 +148,32 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 "p95_latency_ms": cfg.budgets.p95_latency_ms,
                 "max_cost_usd_per_item": cfg.budgets.max_cost_usd_per_item
             })
+        elif ev.type == "llm":
+            if not ev.prompt_path:
+                rprint(f"[red]prompt_path required for LLM evaluator: {ev.name}[/red]")
+                continue
+            if not ev.provider:
+                rprint(f"[red]provider required for LLM evaluator: {ev.name}[/red]")
+                continue
+            if not ev.model:
+                rprint(f"[red]model required for LLM evaluator: {ev.name}[/red]")
+                continue
+            
+            try:
+                s, v = ev_llm.evaluate(
+                    outputs=o_map,
+                    fixtures=f_map,
+                    provider=ev.provider,
+                    model=ev.model,
+                    prompt_path=ev.prompt_path,
+                    api_key_env_var=ev.api_key_env_var,
+                    base_url=ev.base_url,
+                    temperature=ev.temperature or 0.1,
+                    max_tokens=ev.max_tokens or 1000
+                )
+            except Exception as e:
+                rprint(f"[red]LLM evaluator {ev.name} failed: {e}[/red]")
+                continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
             continue

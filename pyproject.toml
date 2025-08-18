@@ -19,6 +19,17 @@ dependencies = [
   "rich>=13.8"
 ]
 
+[project.optional-dependencies]
+llm = [
+  "openai>=1.0.0",
+  "anthropic>=0.34.0"
+]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=4.0",
+  "ruff>=0.1.0"
+]
+
 [project.urls]
 Homepage = "https://evalgate.aotp.ai/"
 Repository = "https://github.com/aotp-ventures/evalgate"

@@ -8,6 +8,15 @@ inputs:
   config:
     description: "Path to evalgate YAML config"
     required: true
+  openai_api_key:
+    description: "OpenAI API key for LLM evaluators (optional)"
+    required: false
+  anthropic_api_key:
+    description: "Anthropic API key for LLM evaluators (optional)"
+    required: false
+  azure_api_key:
+    description: "Azure API key for LLM evaluators (optional)"
+    required: false
 
 runs:
   using: "composite"
@@ -19,8 +28,12 @@ runs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Run EvalGate (PyPI)
       shell: bash
+      env:
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        AZURE_API_KEY: ${{ inputs.azure_api_key }}
       run: |
-        uvx --from evalgate evalgate run --config "${{ inputs.config }}"
+        uvx --from evalgate[llm] evalgate run --config "${{ inputs.config }}"
     - name: Summary
       if: always()
       shell: bash

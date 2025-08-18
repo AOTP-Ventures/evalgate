@@ -15,10 +15,18 @@ class Outputs(BaseModel):
 
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets"
+    type: str  # "schema" | "category" | "budgets" | "llm"
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
+    # LLM-specific fields
+    provider: Optional[str] = None  # "openai" | "anthropic" | "azure" | "local"
+    model: Optional[str] = None  # e.g. "gpt-4", "claude-3-5-sonnet-20241022"
+    prompt_path: Optional[str] = None  # path to prompt template file
+    api_key_env_var: Optional[str] = None  # env var name for API key
+    base_url: Optional[str] = None  # for local/custom endpoints
+    temperature: Optional[float] = 0.1  # for consistent evaluation
+    max_tokens: Optional[int] = 1000  # response length limit
     enabled: bool = True
 
     @field_validator("weight")

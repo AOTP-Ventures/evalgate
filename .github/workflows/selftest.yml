@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  selftest:
+  selftest-basic:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,8 +21,59 @@ jobs:
       - name: Generate outputs
         run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
 
-      # Run the action from this repo (installs uv, runs evalgate, prints summary)
-      - name: Run EvalGate (local action)
+      # Run the basic action from this repo (without LLM judge)
+      - name: Run EvalGate Basic (local action)
         uses: ./
         with:
           config: .github/evalgate.yml
+
+  selftest-llm-judge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      # Check if OpenAI API key is available (fail fast with clear message)
+      - name: Validate OpenAI API Key
+        run: |
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "❌ OPENAI_API_KEY secret is not set"
+            echo "Please add your OpenAI API key as a repository secret named 'OPENAI_API_KEY'"
+            echo "Go to: Settings > Secrets and variables > Actions > New repository secret"
+            exit 1
+          else
+            echo "✅ OPENAI_API_KEY secret is configured"
+          fi
+
+      # Generate outputs from fixtures
+      - name: Generate outputs
+        run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
+
+      # Create test config with LLM judge enabled
+      - name: Create LLM test config
+        run: |
+          cat > .github/evalgate-llm-test.yml << 'EOF'
+          budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
+          fixtures: { path: "eval/fixtures/**/*.json" }
+          outputs: { path: ".evalgate/outputs/**/*.json" }
+          evaluators:
+            - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.4 }
+            - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.3 }
+            - { name: content_quality, type: llm, provider: openai, model: "gpt-4o-mini", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.3 }
+          gate: { min_overall_score: 0.70, allow_regression: false }
+          report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
+          baseline: { ref: "origin/main" }
+          telemetry: { mode: "local_only" }
+          EOF
+
+      # Run the action with LLM judge enabled
+      - name: Run EvalGate with LLM Judge (local action)
+        uses: ./
+        with:
+          config: .github/evalgate-llm-test.yml
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
