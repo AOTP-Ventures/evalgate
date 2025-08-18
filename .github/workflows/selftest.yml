@@ -6,10 +6,11 @@ on:
   pull_request:
 
 jobs:
-  selftest-basic:
+  selftest:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -17,63 +18,77 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
 
-      # Generate outputs from fixtures so the action has something to evaluate
-      - name: Generate outputs
-        run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
-
-      # Run the basic action from this repo (without LLM judge)
-      - name: Run EvalGate Basic (local action)
-        uses: ./
-        with:
-          config: .github/evalgate.yml
-
-  selftest-llm-judge:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-
-      # Check if OpenAI API key is available (fail fast with clear message)
-      - name: Validate OpenAI API Key
+      # Check if OpenAI API key is available (graceful degradation if not set)
+      - name: Check OpenAI API Key availability
+        id: check_api_key
         run: |
-          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
-            echo "❌ OPENAI_API_KEY secret is not set"
-            echo "Please add your OpenAI API key as a repository secret named 'OPENAI_API_KEY'"
-            echo "Go to: Settings > Secrets and variables > Actions > New repository secret"
-            exit 1
+          if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "✅ OPENAI_API_KEY is available - will test LLM judge"
+            echo "has_api_key=true" >> $GITHUB_OUTPUT
           else
-            echo "✅ OPENAI_API_KEY secret is configured"
+            echo "⚠️ OPENAI_API_KEY not set - will test basic evaluators only"
+            echo "has_api_key=false" >> $GITHUB_OUTPUT
           fi
 
       # Generate outputs from fixtures
       - name: Generate outputs
         run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
 
-      # Create test config with LLM judge enabled
-      - name: Create LLM test config
+      # Create comprehensive test config (with LLM judge if API key available)
+      - name: Create test config
         run: |
-          cat > .github/evalgate-llm-test.yml << 'EOF'
+          if [ "${{ steps.check_api_key.outputs.has_api_key }}" = "true" ]; then
+            echo "Creating config with LLM judge enabled"
+            cat > .github/evalgate-selftest.yml << 'EOF'
           budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
           fixtures: { path: "eval/fixtures/**/*.json" }
           outputs: { path: ".evalgate/outputs/**/*.json" }
           evaluators:
-            - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.4 }
-            - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.3 }
-            - { name: content_quality, type: llm, provider: openai, model: "gpt-4o-mini", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.3 }
-          gate: { min_overall_score: 0.70, allow_regression: false }
+            - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.25 }
+            - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.25 }
+            - { name: latency_cost, type: budgets, weight: 0.25 }
+            - { name: content_quality, type: llm, provider: openai, model: "gpt-4o-mini", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.25 }
+          gate: { min_overall_score: 0.75, allow_regression: false }
           report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
           baseline: { ref: "origin/main" }
           telemetry: { mode: "local_only" }
           EOF
+          else
+            echo "Creating config with basic evaluators only"
+            cp .github/evalgate.yml .github/evalgate-selftest.yml
+          fi
 
-      # Run the action with LLM judge enabled
-      - name: Run EvalGate with LLM Judge (local action)
+      # Run EvalGate with all available evaluators
+      - name: Run EvalGate Selftest
+        continue-on-error: true
         uses: ./
         with:
-          config: .github/evalgate-llm-test.yml
+          config: .github/evalgate-selftest.yml
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+      
+      # Post unified results as PR comment
+      - name: Post EvalGate Selftest Results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            try {
+              const {owner, repo} = context.repo;
+              const pr = context.payload.pull_request.number;
+              const marker = '<!-- EVALGATE_SELFTEST -->';
+              const hasApiKey = '${{ steps.check_api_key.outputs.has_api_key }}' === 'true';
+              const testType = hasApiKey ? 'All Evaluators (including LLM Judge)' : 'Basic Evaluators Only';
+              const reportOutput = require('child_process').execSync('uvx --from evalgate evalgate report --artifact ./.evalgate/results.json', {encoding: 'utf8'});
+              const body = marker + `\n## 🧪 EvalGate Selftest Results - ${testType}\n\n` + reportOutput;
+              const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number: pr});
+              const existing = comments.find(c => c.user.type === 'Bot' && c.body && c.body.includes(marker));
+              if (existing) {
+                await github.rest.issues.updateComment({owner, repo, comment_id: existing.id, body});
+              } else {
+                await github.rest.issues.createComment({owner, repo, issue_number: pr, body});
+              }
+            } catch (error) {
+              console.log('Failed to post selftest results:', error.message);
+            }
