@@ -108,7 +108,9 @@ jobs:
               const hasApiKey = '${{ steps.check_api_key.outputs.has_api_key }}' === 'true';
               const testType = hasApiKey ? 'All Evaluators (including LLM Judge)' : 'Basic Evaluators Only';
               const reportOutput = fs.readFileSync('evalgate-report.md', 'utf8');
-              const body = marker + `\n## 🧪 EvalGate Selftest Results - ${testType}\n\n` + reportOutput;
+              const runId = context.runId;
+              const artifactLink = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+              const body = marker + `\n## 🧪 EvalGate Selftest Results - ${testType}\n\n` + reportOutput + `\n\n📋 **[Download detailed results](${artifactLink})** - Look for "evalgate-results" in the Artifacts section`;
               const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number: pr});
               const existing = comments.find(c => c.user.type === 'Bot' && c.body && c.body.includes(marker));
               if (existing) {
