@@ -1,14 +1,11 @@
 {
   "input": {
-    "email_html": "<p>URGENT\u2014refund needed before Friday</p>",
+    "email_html": "<p>URGENT—refund needed before Friday</p>",
     "thread_context": []
   },
   "expected": {
     "priority": "P1",
-    "tags": [
-      "billing",
-      "refunds"
-    ],
+    "tags": ["billing", "refunds"],
     "assignee": "queue:finance"
   },
   "meta": {

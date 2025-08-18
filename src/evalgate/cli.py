@@ -9,8 +9,16 @@ from .util import list_paths, read_json, write_json
 from .evaluators import json_schema as ev_schema
 from .evaluators import category_match as ev_cat
 from .evaluators import latency_cost as ev_budget
+from .evaluators import llm_judge as ev_llm
 from .store import load_baseline
 from .report import render_markdown
+from .templates import (
+    load_default_config,
+    load_schema_example, 
+    load_fixture_example,
+    load_quality_judge_prompt,
+    load_sentiment_judge_prompt
+)
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -21,39 +29,20 @@ def init(path: str = "."):
     (root / ".github").mkdir(parents=True, exist_ok=True)
     (root / "eval" / "fixtures").mkdir(parents=True, exist_ok=True)
     (root / "eval" / "schemas").mkdir(parents=True, exist_ok=True)
+    (root / "eval" / "prompts").mkdir(parents=True, exist_ok=True)
     (root / ".evalgate" / "outputs").mkdir(parents=True, exist_ok=True)
-    (root / ".github" / "evalgate.yml").write_text("""# See README for full reference
-budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
-fixtures: { path: "eval/fixtures/**/*.json" }
-outputs:  { path: ".evalgate/outputs/**/*.json" }
-evaluators:
-  - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.4 }
-  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.4 }
-  - { name: latency_cost, type: budgets, weight: 0.2 }
-gate: { min_overall_score: 0.90, allow_regression: false }
-report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
-baseline: { ref: "origin/main" }
-telemetry: { mode: "local_only" }
-""", encoding="utf-8")
-    (root / "eval" / "schemas" / "queue_item.json").write_text(json.dumps({
-        "$schema":"https://json-schema.org/draft/2020-12/schema",
-        "type":"object",
-        "required":["title","summary","priority","tags","assignee","due_date"],
-        "properties":{
-            "title":{"type":"string","maxLength":80},
-            "summary":{"type":"string"},
-            "priority":{"type":"string","enum":["P0","P1","P2"]},
-            "tags":{"type":"array","items":{"type":"string"}},
-            "assignee":{"type":"string"},
-            "due_date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}"}
-        },
-        "additionalProperties": true
-    }, indent=2), encoding="utf-8")
-    (root / "eval" / "fixtures" / "cx_001.json").write_text(json.dumps({
-        "input":{"email_html":"<p>URGENT—refund needed before Friday</p>","thread_context":[]},
-        "expected":{"priority":"P1","tags":["billing","refunds"],"assignee":"queue:finance"},
-        "meta":{"latency_ms":950,"cost_usd":0.021}
-    }, indent=2), encoding="utf-8")
+    (root / ".github" / "evalgate.yml").write_text(load_default_config(), encoding="utf-8")
+    (root / "eval" / "schemas" / "queue_item.json").write_text(
+        json.dumps(load_schema_example(), indent=2), encoding="utf-8")
+    (root / "eval" / "fixtures" / "cx_001.json").write_text(
+        json.dumps(load_fixture_example(), indent=2), encoding="utf-8")
+    
+    # Create example LLM prompt templates
+    (root / "eval" / "prompts" / "quality_judge.txt").write_text(
+        load_quality_judge_prompt(), encoding="utf-8")
+    
+    (root / "eval" / "prompts" / "sentiment_judge.txt").write_text(
+        load_sentiment_judge_prompt(), encoding="utf-8")
     rprint("[green]Initialized example EvalGate files.[/green]")
 
 @app.command()
@@ -77,10 +66,24 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
 
     scores = []
     failures = []
+    evaluator_errors = []  # Track configuration/runtime errors separately
     latency = cost = None
 
     for ev in cfg.evaluators:
         if not ev.enabled: continue
+        
+        # Check for missing required fields upfront
+        if ev.type == "llm":
+            if not ev.prompt_path:
+                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: prompt_path")
+                continue
+            if not ev.provider:
+                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: provider")
+                continue
+            if not ev.model:
+                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
+                continue
+        
         if ev.type == "schema":
             schema = read_json(ev.schema_path) if ev.schema_path else {}
             s, v = ev_schema.evaluate(o_map, schema)
@@ -91,6 +94,26 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 "p95_latency_ms": cfg.budgets.p95_latency_ms,
                 "max_cost_usd_per_item": cfg.budgets.max_cost_usd_per_item
             })
+        elif ev.type == "llm":
+            # Required field validation already done above
+            try:
+                s, v = ev_llm.evaluate(
+                    outputs=o_map,
+                    fixtures=f_map,
+                    provider=ev.provider,
+                    model=ev.model,
+                    prompt_path=ev.prompt_path,
+                    api_key_env_var=ev.api_key_env_var,
+                    base_url=ev.base_url,
+                    temperature=ev.temperature or 0.1,
+                    max_tokens=ev.max_tokens or 1000
+                )
+            except Exception as e:
+                rprint(f"[red]LLM evaluator {ev.name} failed: {e}[/red]")
+                # Track this as an evaluator error, not just a low score
+                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
+                # Don't add to scores - failed evaluators shouldn't contribute to scoring
+                continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
             continue
@@ -112,15 +135,22 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     if deltas and not cfg.gate.allow_regression:
         regression_ok = all((d >= -1e-6) for d in deltas.values())
 
-    passed = overall >= cfg.gate.min_overall_score and regression_ok
+    # Fail the gate if any evaluators failed to run
+    evaluators_ok = len(evaluator_errors) == 0
+    if not evaluators_ok:
+        rprint(f"[red]Gate failed: {len(evaluator_errors)} evaluator(s) failed to run[/red]")
+    
+    passed = overall >= cfg.gate.min_overall_score and regression_ok and evaluators_ok
     result = {
         "overall": overall,
         "scores": [{"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])} for x in scores],
         "failures": failures,
+        "evaluator_errors": evaluator_errors,  # Separate from test failures
         "latency": latency,
         "cost": cost,
         "gate": {"min_overall_score": cfg.gate.min_overall_score, "allow_regression": cfg.gate.allow_regression, "passed": passed},
         "regression_ok": regression_ok,
+        "evaluators_ok": evaluators_ok,
         "artifact_path": cfg.report.artifact_path,
     }
 
