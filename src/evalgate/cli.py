@@ -173,6 +173,10 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 )
             except Exception as e:
                 rprint(f"[red]LLM evaluator {ev.name} failed: {e}[/red]")
+                # Add failed evaluator to results with 0.0 score so it's visible
+                s, v = 0.0, [f"Evaluator failed: {str(e)}"]
+                scores.append({"name": ev.name, "score": float(s), "weight": ev.weight, "failed": True})
+                failures.extend(v)
                 continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
