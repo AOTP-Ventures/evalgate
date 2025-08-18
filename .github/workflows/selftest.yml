@@ -58,13 +58,25 @@ jobs:
             cp .github/evalgate.yml .github/evalgate-selftest.yml
           fi
 
-      # Run EvalGate with all available evaluators
+      # Install local version with LLM dependencies
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Install local evalgate with LLM support
+        run: |
+          uv pip install -e .[llm]
+      
+      # Run EvalGate with all available evaluators (using local code)
       - name: Run EvalGate Selftest
         continue-on-error: true
-        uses: ./
-        with:
-          config: .github/evalgate-selftest.yml
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
+        run: |
+          uv run evalgate run --config .github/evalgate-selftest.yml
       
       # Post unified results as PR comment
       - name: Post EvalGate Selftest Results
@@ -80,7 +92,7 @@ jobs:
               const marker = '<!-- EVALGATE_SELFTEST -->';
               const hasApiKey = '${{ steps.check_api_key.outputs.has_api_key }}' === 'true';
               const testType = hasApiKey ? 'All Evaluators (including LLM Judge)' : 'Basic Evaluators Only';
-              const reportOutput = require('child_process').execSync('uvx --from evalgate evalgate report --artifact ./.evalgate/results.json', {encoding: 'utf8'});
+              const reportOutput = require('child_process').execSync('uv run evalgate report --artifact ./.evalgate/results.json', {encoding: 'utf8'});
               const body = marker + `\n## 🧪 EvalGate Selftest Results - ${testType}\n\n` + reportOutput;
               const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number: pr});
               const existing = comments.find(c => c.user.type === 'Bot' && c.body && c.body.includes(marker));
