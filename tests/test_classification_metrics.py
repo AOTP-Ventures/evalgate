@@ -38,3 +38,20 @@ def test_multi_label_metrics():
     assert round(metrics["recall"], 3) == 0.5
     assert round(f1, 3) == 0.571
     assert len(fails) == 2
+
+def test_missing_labels_are_skipped():
+    outputs = {"a": {}, "b": {"label": "cat"}}
+    fixtures = {
+        "a": {"expected": {"label": "dog"}},
+        "b": {"expected": {"label": "cat"}},
+    }
+    f1, fails, metrics = cm.evaluate(outputs, fixtures, field="label")
+    assert f1 == 1.0
+    assert fails == []
+
+
+def test_empty_outputs_return_perfect_score():
+    f1, fails, metrics = cm.evaluate({}, {"x": {"expected": {"label": "cat"}}}, field="label")
+    assert f1 == 1.0
+    assert metrics["precision"] == 1.0
+    assert fails == []
