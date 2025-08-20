@@ -88,7 +88,10 @@ evaluators:
     prompt_path: eval/prompts/quality_judge.txt
     api_key_env_var: OPENAI_API_KEY
     weight: 0.3
+    min_score: 0.75  # fail if score < 0.75
 ```
+
+`min_score` enforces a minimum evaluator score; the run fails if the score drops below this threshold.
 
 ### 4. Set your API key
 ```bash
