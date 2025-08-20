@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -26,6 +26,7 @@ class EvaluatorType(str, Enum):
     ROUGE_BLEU = "rouge_bleu"
     REQUIRED_FIELDS = "required_fields"
     CLASSIFICATION = "classification"
+    TOOL_USAGE = "tool_usage"
     CONVERSATION = "conversation"
 
 
@@ -42,6 +43,7 @@ class EvaluatorCfg(BaseModel):
     pattern_field: Optional[str] = None  # name of expected field containing regex
     pattern_path: Optional[str] = None  # path to JSON mapping of name->regex
     multi_label: Optional[bool] = False  # treat field as list of labels
+    expected_tool_calls: Optional[Dict[str, List[Dict[str, Any]]]] = None  # expected tool call sequence
     # LLM-specific fields
     provider: Optional[str] = None  # "openai" | "anthropic" | "azure" | "local"
     model: Optional[str] = None  # e.g. "gpt-4", "claude-3-5-sonnet-20241022" or embedding model name

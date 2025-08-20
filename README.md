@@ -132,6 +132,22 @@ Or with the composite action:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
+## Tool Usage Logs
+
+Model outputs can record tool invocations to enable deterministic evaluation of agent behavior. Each output may include a `tool_calls` array with call `name` and `args` in the order executed:
+
+```json
+{
+  "output": "...",
+  "tool_calls": [
+    {"name": "search", "args": {"query": "foo"}},
+    {"name": "lookup", "args": {"id": 1}}
+  ]
+}
+```
+
+The `tool_usage` evaluator compares these logs against expected sequences via the `expected_tool_calls` config field.
+
 ## GitHub Actions Integration
 
 ### Option 1: Use the Composite Action
