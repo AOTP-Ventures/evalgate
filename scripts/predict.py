@@ -1,6 +1,9 @@
 
 #!/usr/bin/env python
-import argparse, json, pathlib
+
+import argparse
+import json
+import pathlib
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--in", dest="inp", required=True, help="fixtures dir")
