@@ -90,6 +90,8 @@ evalgate run --config .github/evalgate.yml
 # The selftest should pass with a score of 1.0
 ```
 
+If your changes modify the expected outputs, remember to [refresh your baseline](README.md#refreshing-your-baseline) on the `main` branch so future runs compare against the updated results.
+
 ### Adding New Tests
 
 When adding new evaluators or features:
@@ -170,7 +172,7 @@ src/evalgate/
 
 ### Adding New Evaluators
 
-To add a new evaluator type:
+To add a new evaluator type (using the plugin registry), see [Writing a custom evaluator](README.md#writing-a-custom-evaluator) for an example. In summary:
 
 1. **Create a new module** in `src/evalgate/evaluators/`
 2. **Implement the `evaluate` function:**
