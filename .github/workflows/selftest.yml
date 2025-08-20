@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      checks: write
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -58,21 +59,24 @@ jobs:
             cp .github/evalgate.yml .github/evalgate-selftest.yml
           fi
 
-      # Install uv for running evalgate
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      
-      # Run EvalGate with all available evaluators (using local code)
+      # Run EvalGate using the composite action
       - name: Run EvalGate Selftest
+        id: evalgate
         continue-on-error: true
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
+        uses: ./
+        with:
+          config: .github/evalgate-selftest.yml
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          azure_api_key: ${{ secrets.AZURE_API_KEY }}
+          check_run: true
+
+      # Show action outputs
+      - name: Show EvalGate outputs
+        if: always()
         run: |
-          uvx --from evalgate[llm] evalgate run --config .github/evalgate-selftest.yml
+          echo "Total score: ${{ steps.evalgate.outputs.total_score }}"
+          echo "Passed: ${{ steps.evalgate.outputs.passed }}"
       
       # Generate report markdown
       - name: Generate report
@@ -117,3 +121,12 @@ jobs:
             } catch (error) {
               console.log('Failed to post selftest results:', error.message);
             }
+
+      # Enforce gate based on action output
+      - name: Enforce EvalGate
+        if: always()
+        run: |
+          if [ "${{ steps.evalgate.outputs.passed }}" != "true" ]; then
+            echo "EvalGate gate failed"
+            exit 1
+          fi
