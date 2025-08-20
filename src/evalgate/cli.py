@@ -6,6 +6,8 @@ import os
 import pathlib
 import random
 import subprocess
+import urllib.error
+import urllib.request
 import yaml
 import typer
 from pydantic import ValidationError
@@ -247,6 +249,11 @@ def report(
     summary: bool = typer.Option(False, "--summary", help="Write to $GITHUB_STEP_SUMMARY"),
     artifact: str = typer.Option(".evalgate/results.json", help="Path to results JSON"),
     max_failures: int = typer.Option(20, "--max-failures", help="Max failures to show"),
+    check_run: bool = typer.Option(
+        False,
+        "--check-run",
+        help="Create a GitHub check run with summary and annotations",
+    ),
 ):
     """Render a markdown summary from results."""
     data = read_json(artifact)
@@ -255,6 +262,54 @@ def report(
         pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(md, encoding="utf-8")
     else:
         print(md)
+    if check_run:
+        token = os.environ.get('GITHUB_TOKEN')
+        sha = os.environ.get('GITHUB_SHA')
+        repo = os.environ.get('GITHUB_REPOSITORY')
+        if not (token and sha and repo):
+            rprint('[yellow]Missing GITHUB_TOKEN, GITHUB_SHA, or GITHUB_REPOSITORY for check run[/yellow]')
+        else:
+            annotations = []
+            for fail in data.get('failures', [])[:50]:
+                path = ''
+                msg = fail
+                if ':' in fail:
+                    name, msg_part = fail.split(':', 1)
+                    path = f'eval/fixtures/{name}.json'
+                    msg = msg_part.strip()
+                annotations.append({
+                    'path': path,
+                    'start_line': 1,
+                    'end_line': 1,
+                    'annotation_level': 'failure',
+                    'message': msg[:1000],
+                })
+            payload = {
+                'name': 'EvalGate',
+                'head_sha': sha,
+                'status': 'completed',
+                'conclusion': 'success' if data.get('gate', {}).get('passed') else 'failure',
+                'output': {
+                    'title': 'EvalGate',
+                    'summary': md[:65535],
+                    'annotations': annotations,
+                },
+            }
+            req = urllib.request.Request(
+                f'https://api.github.com/repos/{repo}/check-runs',
+                data=json.dumps(payload).encode('utf-8'),
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'evalgate',
+                },
+                method='POST',
+            )
+            try:
+                urllib.request.urlopen(req)
+            except urllib.error.URLError as e:
+                rprint(f'[yellow]Failed to create check run: {e}[/yellow]')
 
 def main():
     app()
