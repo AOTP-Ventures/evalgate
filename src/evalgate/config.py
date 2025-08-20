@@ -47,6 +47,8 @@ class EvaluatorCfg(BaseModel):
     base_url: Optional[str] = None  # for local/custom endpoints
     temperature: Optional[float] = 0.1  # for consistent evaluation
     max_tokens: Optional[int] = 1000  # response length limit
+    transcript_field: Optional[str] = None  # field with conversation transcript
+    per_turn_scoring: Optional[bool] = False  # score each turn individually
     enabled: bool = True
 
     @field_validator("type", mode="before")
