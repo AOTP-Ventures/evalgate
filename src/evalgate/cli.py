@@ -18,6 +18,7 @@ from .evaluators import latency_cost as ev_budget
 from .evaluators import llm_judge as ev_llm
 from .evaluators import regex_match as ev_regex
 from .evaluators import rouge_bleu as ev_rb
+from .evaluators import classification_metrics as ev_cls
 from .util import list_paths, read_json, write_json
 from .fixture_generator import generate_suite
 from .store import load_baseline
@@ -117,13 +118,14 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             if not ev.model:
                 evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
                 continue
-        if ev.type in ("embedding", "rouge_bleu") and not ev.expected_field:
+        if ev.type in ("embedding", "rouge_bleu", "classification") and not ev.expected_field:
             evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: expected_field")
             continue
         if ev.type == "regex" and not (ev.pattern_field or ev.pattern_path):
             evaluator_errors.append(f"Evaluator '{ev.name}' missing pattern_field or pattern_path")
             continue
         
+        extra = {}
         if ev.type == "schema":
             schema = read_json(ev.schema_path) if ev.schema_path else {}
             s, v = ev_schema.evaluate(o_map, schema)
@@ -215,10 +217,23 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 rprint(f"[red]Embedding evaluator {ev.name} failed: {e}[/red]")
                 evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
                 continue
+        elif ev.type == "classification":
+            try:
+                s, v, m = ev_cls.evaluate(
+                    outputs=o_map,
+                    fixtures=f_map,
+                    field=ev.expected_field or "",
+                    multi_label=ev.multi_label or False,
+                )
+                extra["metrics"] = m
+            except Exception as e:
+                rprint(f"[red]Classification evaluator {ev.name} failed: {e}[/red]")
+                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
+                continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
             continue
-        scores.append({"name": ev.name, "score": float(s), "weight": ev.weight})
+        scores.append({"name": ev.name, "score": float(s), "weight": ev.weight, **extra})
         failures.extend(v)
 
     total_w = sum(x["weight"] for x in scores) or 1.0
@@ -242,9 +257,15 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         rprint(f"[red]Gate failed: {len(evaluator_errors)} evaluator(s) failed to run[/red]")
     
     passed = overall >= cfg.gate.min_overall_score and regression_ok and evaluators_ok
+    score_items = []
+    for x in scores:
+        item = {"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])}
+        if "metrics" in x:
+            item["metrics"] = x["metrics"]
+        score_items.append(item)
     result = {
         "overall": overall,
-        "scores": [{"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])} for x in scores],
+        "scores": score_items,
         "failures": failures,
         "evaluator_errors": evaluator_errors,  # Separate from test failures
         "latency": latency,
