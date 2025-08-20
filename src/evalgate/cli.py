@@ -289,12 +289,15 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         rprint("[green]EvalGate PASSED[/green]")
 
 @app.command()
-def report(pr: bool = typer.Option(False, "--pr", help="(future) post PR comment via API"),
-           summary: bool = typer.Option(False, "--summary", help="Write to $GITHUB_STEP_SUMMARY"),
-           artifact: str = typer.Option(".evalgate/results.json", help="Path to results JSON")):
+def report(
+    pr: bool = typer.Option(False, "--pr", help="(future) post PR comment via API"),
+    summary: bool = typer.Option(False, "--summary", help="Write to $GITHUB_STEP_SUMMARY"),
+    artifact: str = typer.Option(".evalgate/results.json", help="Path to results JSON"),
+    max_failures: int = typer.Option(20, "--max-failures", help="Max failures to show"),
+):
     """Render a markdown summary from results."""
     data = read_json(artifact)
-    md = render_markdown(data)
+    md = render_markdown(data, max_failures=max_failures)
     if summary and "GITHUB_STEP_SUMMARY" in os.environ:
         pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(md, encoding="utf-8")
     else:
