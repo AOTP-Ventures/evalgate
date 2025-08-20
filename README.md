@@ -100,6 +100,12 @@ export OPENAI_API_KEY=your_api_key_here
 evalgate run --config .github/evalgate.yml
 ```
 
+LLM judge responses are cached in `.evalgate/cache.json`. Reuse cached results to avoid repeat API calls or clear them with:
+
+```bash
+evalgate run --config .github/evalgate.yml --clear-cache
+```
+
 ### GitHub Actions Integration with API Keys
 
 Add your API keys as repository secrets in GitHub, then use them in your workflow:

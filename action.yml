@@ -26,6 +26,12 @@ runs:
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Cache LLM responses
+      uses: actions/cache@v4
+      with:
+        path: .evalgate/cache.json
+        key: ${{ runner.os }}-evalgate-${{ hashFiles('.evalgate/cache.json') }}
+        restore-keys: ${{ runner.os }}-evalgate-
     - name: Run EvalGate (PyPI)
       shell: bash
       env:
