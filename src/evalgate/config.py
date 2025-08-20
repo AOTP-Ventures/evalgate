@@ -26,6 +26,7 @@ class EvaluatorType(str, Enum):
     ROUGE_BLEU = "rouge_bleu"
     REQUIRED_FIELDS = "required_fields"
     CLASSIFICATION = "classification"
+    WORKFLOW = "workflow"
     TOOL_USAGE = "tool_usage"
     CONVERSATION = "conversation"
 
@@ -52,6 +53,7 @@ class EvaluatorCfg(BaseModel):
     base_url: Optional[str] = None  # for local/custom endpoints
     temperature: Optional[float] = 0.1  # for consistent evaluation
     max_tokens: Optional[int] = 1000  # response length limit
+    workflow_path: Optional[str] = None  # path to JSON or YAML workflow DAG spec
     enabled: bool = True
 
     @field_validator("type", mode="before")
