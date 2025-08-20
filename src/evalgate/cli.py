@@ -23,6 +23,7 @@ from .evaluators import (
     rouge_bleu as _rouge_bleu,  # noqa: F401
     required_fields as _required_fields,  # noqa: F401
     classification_metrics as _classification_metrics,  # noqa: F401
+    conversation_flow as _conversation_flow,  # noqa: F401
 )
 from .util import list_paths, read_json, write_json
 from .fixture_generator import generate_suite

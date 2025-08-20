@@ -199,6 +199,24 @@ Or integrate directly in your existing workflow:
     path: .evalgate/results.json
     retention-days: 30
 ```
+```
+
+## Conversation Flow Evaluator
+
+Validate multi-turn conversations by checking the final message and turn count.
+
+```yaml
+evaluators:
+  - name: convo_flow
+    type: conversation
+    expected_final_field: content
+    max_turns: 5
+    weight: 0.2
+```
+
+Each output must provide a `messages` array. The evaluator compares the last
+message's `content` against the fixture's `expected.content` and fails if the
+conversation exceeds `max_turns`.
 
 ## Writing a custom evaluator
 
