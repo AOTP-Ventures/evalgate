@@ -5,6 +5,8 @@ import re
 from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
 
+from .base import register
+
 
 def _load_prompt_template(prompt_path: str) -> str:
     """Load prompt template from file."""
@@ -274,3 +276,25 @@ def evaluate(outputs: Dict[str, Dict[str, Any]],
     average_score = sum(scores) / len(scores) if scores else 0.0
     
     return average_score, details
+
+
+@register("llm")
+def run(cfg, ev, outputs, fixtures):
+    if not ev.prompt_path:
+        raise ValueError("missing required field: prompt_path")
+    if not ev.provider:
+        raise ValueError("missing required field: provider")
+    if not ev.model:
+        raise ValueError("missing required field: model")
+    score, fails = evaluate(
+        outputs=outputs,
+        fixtures=fixtures,
+        provider=ev.provider,
+        model=ev.model,
+        prompt_path=ev.prompt_path,
+        api_key_env_var=ev.api_key_env_var,
+        base_url=ev.base_url,
+        temperature=ev.temperature or 0.1,
+        max_tokens=ev.max_tokens or 1000,
+    )
+    return score, fails, {}

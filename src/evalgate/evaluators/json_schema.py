@@ -3,6 +3,9 @@ from __future__ import annotations
 from jsonschema import Draft202012Validator
 from typing import Dict, Any, List, Tuple
 
+from .base import register
+from ..util import read_json
+
 def evaluate(outputs: Dict[str, Dict[str, Any]], schema: Dict[str, Any]) -> Tuple[float, List[str]]:
     """Return score in [0,1] and list of violation strings."""
     validator = Draft202012Validator(schema)
@@ -18,4 +21,11 @@ def evaluate(outputs: Dict[str, Dict[str, Any]], schema: Dict[str, Any]) -> Tupl
         else:
             ok += 1
     return ok / total, violations
+
+
+@register("schema")
+def run(cfg, ev, outputs, fixtures):
+    schema = read_json(ev.schema_path) if ev.schema_path else {}
+    score, fails = evaluate(outputs, schema)
+    return score, fails, {}
 
