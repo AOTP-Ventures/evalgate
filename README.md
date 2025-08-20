@@ -46,6 +46,31 @@ uvx --from evalgate evalgate baseline update --config .github/evalgate.yml
 
 Pull requests will be compared against these baseline results.
 
+## Conversation Fixtures
+
+When working with chat-based models, fixtures can describe full conversations.
+Each conversation fixture contains a list of `messages`, where every message has
+a `role` (such as `system`, `user`, `assistant`, or `tool`) and `content`.
+Assistant messages may optionally include `tool_calls` describing functions the
+assistant wants to invoke.
+
+Example conversation fixture:
+
+```json
+{
+  "messages": [
+    { "role": "user", "content": "Hello!" },
+    {
+      "role": "assistant",
+      "content": "Hi there!",
+      "tool_calls": [
+        { "name": "search", "arguments": { "query": "Hello!" } }
+      ]
+    }
+  ]
+}
+```
+
 ## LLM as Judge
 
 EvalGate can use LLMs to evaluate outputs for complex criteria beyond simple schema validation.

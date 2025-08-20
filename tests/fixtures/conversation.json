@@ -1,0 +1,12 @@
+{
+  "messages": [
+    { "role": "user", "content": "Hello!" },
+    {
+      "role": "assistant",
+      "content": "Hi there!",
+      "tool_calls": [
+        { "name": "search", "arguments": { "query": "Hello!" } }
+      ]
+    }
+  ]
+}
