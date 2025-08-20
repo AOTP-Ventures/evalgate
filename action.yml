@@ -21,6 +21,14 @@ inputs:
     required: false
     default: "false"
 
+outputs:
+  total_score:
+    description: "Overall score from .evalgate/results.json"
+    value: ${{ steps.results.outputs.total_score }}
+  passed:
+    description: "Whether EvalGate passed"
+    value: ${{ steps.results.outputs.passed }}
+
 runs:
   using: "composite"
   steps:
@@ -43,6 +51,15 @@ runs:
         AZURE_API_KEY: ${{ inputs.azure_api_key }}
       run: |
         uvx --from evalgate[llm] evalgate run --config "${{ inputs.config }}"
+    - name: Read Results
+      id: results
+      if: always()
+      shell: bash
+      run: |
+        total_score=$(jq -r '.overall' .evalgate/results.json)
+        passed=$(jq -r '.gate.passed' .evalgate/results.json)
+        echo "total_score=$total_score" >> "$GITHUB_OUTPUT"
+        echo "passed=$passed" >> "$GITHUB_OUTPUT"
     - name: Summary
       if: always()
       shell: bash
