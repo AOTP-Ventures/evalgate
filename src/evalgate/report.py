@@ -40,4 +40,24 @@ def render_markdown(result: Dict[str, Any]) -> str:
         f"- allow_regression: {result['gate']['allow_regression']} → {'✅' if (result.get('regression_ok', True)) else '❌'}",
         f"- evaluators_ok: → {'✅' if result.get('evaluators_ok', True) else '❌'}",
     ]
+
+    # Optional tables (e.g., confusion matrices)
+    for table in result.get("tables", []):
+        headers = table.get("headers", [])
+        rows = table.get("rows", [])
+        if not headers or not rows:
+            continue
+        lines += ["", f"**{table.get('title', 'Table')}**"]
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+        for row in rows:
+            lines.append("| " + " | ".join(str(x) for x in row) + " |")
+
+    # Optional plots (links)
+    for plot in result.get("plots", []):
+        url = plot.get("url")
+        title = plot.get("title", "plot")
+        if url:
+            lines += ["", f"![{title}]({url})"]
+
     return "\n".join(lines)
