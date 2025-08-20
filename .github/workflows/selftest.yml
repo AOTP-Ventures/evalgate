@@ -58,15 +58,11 @@ jobs:
             cp .github/evalgate.yml .github/evalgate-selftest.yml
           fi
 
-      # Install local version with LLM dependencies
+      # Install uv for running evalgate
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      
-      - name: Install local evalgate with LLM support
-        run: |
-          uv sync --extra llm
       
       # Run EvalGate with all available evaluators (using local code)
       - name: Run EvalGate Selftest
@@ -76,13 +72,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
         run: |
-          uv run evalgate run --config .github/evalgate-selftest.yml
+          uvx --from evalgate[llm] evalgate run --config .github/evalgate-selftest.yml
       
       # Generate report markdown
       - name: Generate report
         if: always()
         run: |
-          uv run evalgate report --artifact ./.evalgate/results.json > evalgate-report.md
+          uvx --from evalgate evalgate report --artifact ./.evalgate/results.json > evalgate-report.md
       
       # Upload results artifact for debugging
       - name: Upload EvalGate Results
