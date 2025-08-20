@@ -1,7 +1,9 @@
 
 from __future__ import annotations
-from pydantic import BaseModel, Field, field_validator
+from enum import Enum
 from typing import List, Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 class Budgets(BaseModel):
     p95_latency_ms: int = Field(..., ge=1)
@@ -13,9 +15,22 @@ class Fixtures(BaseModel):
 class Outputs(BaseModel):
     path: str  # glob
 
+
+class EvaluatorType(str, Enum):
+    SCHEMA = "schema"
+    CATEGORY = "category"
+    BUDGETS = "budgets"
+    LLM = "llm"
+    EMBEDDING = "embedding"
+    REGEX = "regex"
+    ROUGE_BLEU = "rouge_bleu"
+    REQUIRED_FIELDS = "required_fields"
+    CLASSIFICATION = "classification"
+
+
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex" | "rouge_bleu" | "required_fields" | "classification"
+    type: EvaluatorType
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
@@ -33,6 +48,19 @@ class EvaluatorCfg(BaseModel):
     temperature: Optional[float] = 0.1  # for consistent evaluation
     max_tokens: Optional[int] = 1000  # response length limit
     enabled: bool = True
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def _parse_type(cls, v):
+        if isinstance(v, str):
+            try:
+                return EvaluatorType[v.upper()]
+            except KeyError:
+                try:
+                    return EvaluatorType(v.lower())
+                except ValueError as exc:
+                    raise ValueError(f"invalid evaluator type: {v}") from exc
+        return v
 
     @field_validator("weight")
     @classmethod
