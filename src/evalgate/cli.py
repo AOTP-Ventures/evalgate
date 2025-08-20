@@ -17,6 +17,7 @@ from .evaluators import latency_cost as ev_budget
 from .evaluators import llm_judge as ev_llm
 from .evaluators import regex_match as ev_regex
 from .evaluators import rouge_bleu as ev_rb
+from .evaluators import required_fields as ev_req
 from .util import list_paths, read_json, write_json
 from .store import load_baseline
 from .report import render_markdown
@@ -192,6 +193,8 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 rprint(f"[red]Embedding evaluator {ev.name} failed: {e}[/red]")
                 evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
                 continue
+        elif ev.type == "required_fields":
+            s, v = ev_req.evaluate(o_map, f_map)
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
             continue

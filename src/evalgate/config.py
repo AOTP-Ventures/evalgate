@@ -15,7 +15,7 @@ class Outputs(BaseModel):
 
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex" | "rouge_bleu"
+    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex" | "rouge_bleu" | "required_fields"
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
