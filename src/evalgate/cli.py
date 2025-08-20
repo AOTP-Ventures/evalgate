@@ -75,6 +75,8 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     failures = []
     evaluator_errors = []  # Track configuration/runtime errors separately
     latency = cost = None
+    tables: list[dict[str, object]] = []
+    plots: list[dict[str, str]] = []
 
     for ev in cfg.evaluators:
         if not ev.enabled:
@@ -103,6 +105,32 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             s, v = ev_schema.evaluate(o_map, schema)
         elif ev.type == "category":
             s, v = ev_cat.evaluate(o_map, f_map, ev.expected_field or "")
+            # Build confusion matrix for classification results
+            label_set: set[str] = set()
+            matrix: dict[str, dict[str, int]] = {}
+            for n in names:
+                exp_val = f_map.get(n, {}).get("expected", {}).get(ev.expected_field or "")
+                if exp_val is None:
+                    continue
+                got_val = o_map.get(n, {}).get(ev.expected_field or "")
+                exp_label = str(exp_val)
+                got_label = str(got_val)
+                label_set.update([exp_label, got_label])
+                matrix.setdefault(exp_label, {}).setdefault(got_label, 0)
+                matrix[exp_label][got_label] += 1
+            labels = sorted(label_set)
+            headers = ["exp\\pred"] + labels
+            rows = []
+            for exp_label in labels:
+                row = [exp_label]
+                for pred_label in labels:
+                    row.append(matrix.get(exp_label, {}).get(pred_label, 0))
+                rows.append(row)
+            tables.append({
+                "title": f"Confusion Matrix ({ev.name})",
+                "headers": headers,
+                "rows": rows,
+            })
         elif ev.type == "budgets":
             s, v, latency, cost = ev_budget.evaluate(f_map, {
                 "p95_latency_ms": cfg.budgets.p95_latency_ms,
@@ -189,6 +217,8 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         "regression_ok": regression_ok,
         "evaluators_ok": evaluators_ok,
         "artifact_path": cfg.report.artifact_path,
+        "tables": tables,
+        "plots": plots,
     }
 
     write_json(output, result)
