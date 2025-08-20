@@ -174,3 +174,42 @@ Or integrate directly in your existing workflow:
     path: .evalgate/results.json
     retention-days: 30
 ```
+
+## Writing a custom evaluator
+
+EvalGate supports custom evaluators through the plugin registry introduced in Issue 1. This lets you package and share evaluation logic as reusable plugins.
+
+```python
+from evalgate.plugins import registry
+from evalgate.evaluators import BaseEvaluator
+
+@registry.evaluator("my_custom")
+class MyCustomEvaluator(BaseEvaluator):
+    def evaluate(self, outputs, fixtures, **kwargs):
+        score = 1.0  # your scoring logic here
+        violations: list[str] = []
+        return score, violations
+```
+
+After registering, reference the evaluator in your configuration:
+
+```yaml
+evaluators:
+  - name: my_custom
+    type: my_custom
+    weight: 0.5
+```
+
+## Refreshing your baseline
+
+EvalGate compares pull requests against a baseline stored on your main branch. When your model's expected outputs change, refresh the baseline so future PRs compare against the new results:
+
+```bash
+# Generate fresh outputs and update baseline
+python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
+uvx --from evalgate evalgate run --config .github/evalgate.yml
+git add .evalgate/results.json
+git commit -m "Refresh eval baseline"
+```
+
+Merge the commit into `main`, and subsequent runs will use the updated baseline for regression checks.
