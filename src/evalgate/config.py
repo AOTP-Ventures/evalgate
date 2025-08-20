@@ -26,6 +26,7 @@ class EvaluatorType(str, Enum):
     ROUGE_BLEU = "rouge_bleu"
     REQUIRED_FIELDS = "required_fields"
     CLASSIFICATION = "classification"
+    CONVERSATION = "conversation"
 
 
 class EvaluatorCfg(BaseModel):
@@ -34,6 +35,8 @@ class EvaluatorCfg(BaseModel):
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
+    expected_final_field: Optional[str] = None
+    max_turns: Optional[int] = None
     threshold: Optional[float] = 0.8  # cosine similarity threshold for embedding evaluator
     metric: Optional[str] = None  # metric for rouge_bleu evaluator: "bleu" | "rouge1" | "rouge2" | "rougeL"
     pattern_field: Optional[str] = None  # name of expected field containing regex
