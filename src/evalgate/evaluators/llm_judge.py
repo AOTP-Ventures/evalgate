@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
 
 from .base import register
+from .. import cache
 
 
 def _load_prompt_template(prompt_path: str) -> str:
@@ -316,31 +317,29 @@ def evaluate(
         )
 
         try:
-            if provider == "openai":
-                if not api_key:
-                    raise ValueError("API key required for OpenAI provider")
-                response = _call_openai(
-                    model, formatted_prompt, api_key, temperature, max_tokens, base_url
-                )
-            elif provider == "anthropic":
-                if not api_key:
-                    raise ValueError("API key required for Anthropic provider")
-                response = _call_anthropic(
-                    model, formatted_prompt, api_key, temperature, max_tokens
-                )
-            elif provider == "azure":
-                if not api_key:
-                    raise ValueError("API key required for Azure provider")
-                response = _call_azure(
-                    model, formatted_prompt, api_key, temperature, max_tokens, base_url
-                )
-            elif provider == "local":
-                response = _call_local(
-                    model, formatted_prompt, temperature, max_tokens, base_url
-                )
+            cached = cache.get(model, formatted_prompt)
+            if cached is not None:
+                response = cached
             else:
-                raise ValueError(f"Unknown provider: {provider}")
-
+                if provider == "openai":
+                    if not api_key:
+                        raise ValueError("API key required for OpenAI provider")
+                    response = _call_openai(model, formatted_prompt, api_key, temperature, max_tokens, base_url)
+                elif provider == "anthropic":
+                    if not api_key:
+                        raise ValueError("API key required for Anthropic provider")
+                    response = _call_anthropic(model, formatted_prompt, api_key, temperature, max_tokens)
+                elif provider == "azure":
+                    if not api_key:
+                        raise ValueError("API key required for Azure provider")
+                    response = _call_azure(model, formatted_prompt, api_key, temperature, max_tokens, base_url)
+                elif provider == "local":
+                    response = _call_local(model, formatted_prompt, temperature, max_tokens, base_url)
+                else:
+                    raise ValueError(f"Unknown provider: {provider}")
+                cache.set(model, formatted_prompt, response)
+            
+            # Extract score from response
             score = _extract_score_from_response(response)
             scores.append(score)
 

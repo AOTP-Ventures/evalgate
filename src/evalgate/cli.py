@@ -31,6 +31,7 @@ from .util import list_paths, read_json, write_json
 from .fixture_generator import generate_suite
 from .store import load_baseline
 from .report import render_markdown
+from . import cache
 from .templates import (
     load_default_config,
     load_schema_example, 
@@ -87,8 +88,11 @@ def generate_fixtures(
 
 @app.command()
 def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
-        output: str = typer.Option(".evalgate/results.json", help="Where to write results JSON")):
+        output: str = typer.Option(".evalgate/results.json", help="Where to write results JSON"),
+        clear_cache: bool = typer.Option(False, "--clear-cache", help="Clear cached LLM responses before run")):
     """Run evals and write a results artifact."""
+    if clear_cache:
+        cache.clear()
     try:
         cfg = Config.model_validate(yaml.safe_load(pathlib.Path(config).read_text(encoding="utf-8")))
     except ValidationError as e:

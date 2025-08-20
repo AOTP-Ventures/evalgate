@@ -53,6 +53,25 @@ def test_llm_judge_dependency_error(monkeypatch, tmp_path):
     assert score == 0.0
     assert "Evaluation failed" in details[0]
 
+def test_llm_judge_cache(monkeypatch, tmp_path):
+    prompt = tmp_path / "p.txt"
+    prompt.write_text("{input}")
+    calls = {"n": 0}
+
+    def fake_call(*args, **kwargs):
+        calls["n"] += 1
+        return "Score: 0.5"
+
+    monkeypatch.setattr(lj, "_call_openai", fake_call)
+    monkeypatch.setenv("OPENAI_KEY", "x")
+    from evalgate import cache
+
+    cache.clear()
+    outputs = {"a": {}}
+    fixtures = {"a": {}}
+    lj.evaluate(outputs, fixtures, provider="openai", model="gpt", prompt_path=str(prompt), api_key_env_var="OPENAI_KEY")
+    lj.evaluate(outputs, fixtures, provider="openai", model="gpt", prompt_path=str(prompt), api_key_env_var="OPENAI_KEY")
+    assert calls["n"] == 1
 
 def test_llm_judge_transcript(monkeypatch, tmp_path):
     prompt = tmp_path / "p.txt"
