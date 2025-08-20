@@ -15,11 +15,12 @@ class Outputs(BaseModel):
 
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex"
+    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex" | "rouge_bleu"
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
     threshold: Optional[float] = 0.8  # cosine similarity threshold for embedding evaluator
+    metric: Optional[str] = None  # metric for rouge_bleu evaluator: "bleu" | "rouge1" | "rouge2" | "rougeL"
     pattern_field: Optional[str] = None  # name of expected field containing regex
     pattern_path: Optional[str] = None  # path to JSON mapping of name->regex
     # LLM-specific fields

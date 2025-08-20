@@ -15,8 +15,9 @@ from .evaluators import embedding_similarity as ev_embed
 from .evaluators import json_schema as ev_schema
 from .evaluators import latency_cost as ev_budget
 from .evaluators import llm_judge as ev_llm
-from .util import list_paths, read_json, write_json
 from .evaluators import regex_match as ev_regex
+from .evaluators import rouge_bleu as ev_rb
+from .util import list_paths, read_json, write_json
 from .store import load_baseline
 from .report import render_markdown
 from .templates import (
@@ -91,7 +92,7 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             if not ev.model:
                 evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
                 continue
-        if ev.type == "embedding" and not ev.expected_field:
+        if ev.type in ("embedding", "rouge_bleu") and not ev.expected_field:
             evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: expected_field")
             continue
         if ev.type == "regex" and not (ev.pattern_field or ev.pattern_path):
@@ -137,6 +138,18 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 # Track this as an evaluator error, not just a low score
                 evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
                 # Don't add to scores - failed evaluators shouldn't contribute to scoring
+                continue
+        elif ev.type == "rouge_bleu":
+            try:
+                s, v = ev_rb.evaluate(
+                    outputs=o_map,
+                    fixtures=f_map,
+                    field=ev.expected_field or "",
+                    metric=ev.metric or "bleu",
+                )
+            except Exception as e:
+                rprint(f"[red]ROUGE/BLEU evaluator {ev.name} failed: {e}[/red]")
+                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
                 continue
         elif ev.type == "embedding":
             try:

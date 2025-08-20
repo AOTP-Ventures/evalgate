@@ -16,7 +16,9 @@ dependencies = [
   "pydantic>=2.7",
   "pyyaml>=6.0",
   "jsonschema>=4.21",
-  "rich>=13.8"
+  "rich>=13.8",
+  "sacrebleu>=2.4",
+  "rouge-score>=0.1.2"
 ]
 
 [project.optional-dependencies]
