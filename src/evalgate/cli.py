@@ -1,15 +1,22 @@
 
 from __future__ import annotations
-import os, json, pathlib, sys, yaml
+
+import json
+import os
+import pathlib
+import yaml
+
 import typer
 from pydantic import ValidationError
 from rich import print as rprint
+
 from .config import Config
-from .util import list_paths, read_json, write_json
-from .evaluators import json_schema as ev_schema
 from .evaluators import category_match as ev_cat
+from .evaluators import embedding_similarity as ev_embed
+from .evaluators import json_schema as ev_schema
 from .evaluators import latency_cost as ev_budget
 from .evaluators import llm_judge as ev_llm
+from .util import list_paths, read_json, write_json
 from .store import load_baseline
 from .report import render_markdown
 from .templates import (
@@ -70,8 +77,9 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     latency = cost = None
 
     for ev in cfg.evaluators:
-        if not ev.enabled: continue
-        
+        if not ev.enabled:
+            continue
+
         # Check for missing required fields upfront
         if ev.type == "llm":
             if not ev.prompt_path:
@@ -83,6 +91,9 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             if not ev.model:
                 evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
                 continue
+        if ev.type == "embedding" and not ev.expected_field:
+            evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: expected_field")
+            continue
         
         if ev.type == "schema":
             schema = read_json(ev.schema_path) if ev.schema_path else {}
@@ -113,6 +124,19 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 # Track this as an evaluator error, not just a low score
                 evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
                 # Don't add to scores - failed evaluators shouldn't contribute to scoring
+                continue
+        elif ev.type == "embedding":
+            try:
+                s, v = ev_embed.evaluate(
+                    outputs=o_map,
+                    fixtures=f_map,
+                    field=ev.expected_field or "",
+                    model_name=ev.model or "sentence-transformers/all-MiniLM-L6-v2",
+                    threshold=ev.threshold or 0.8,
+                )
+            except Exception as e:
+                rprint(f"[red]Embedding evaluator {ev.name} failed: {e}[/red]")
+                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
                 continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
