@@ -132,6 +132,22 @@ Or with the composite action:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
+## Tool Usage Logs
+
+Model outputs can record tool invocations to enable deterministic evaluation of agent behavior. Each output may include a `tool_calls` array with call `name` and `args` in the order executed:
+
+```json
+{
+  "output": "...",
+  "tool_calls": [
+    {"name": "search", "args": {"query": "foo"}},
+    {"name": "lookup", "args": {"id": 1}}
+  ]
+}
+```
+
+The `tool_usage` evaluator compares these logs against expected sequences via the `expected_tool_calls` config field.
+
 ## GitHub Actions Integration
 
 ### Option 1: Use the Composite Action
@@ -183,6 +199,24 @@ Or integrate directly in your existing workflow:
     path: .evalgate/results.json
     retention-days: 30
 ```
+```
+
+## Conversation Flow Evaluator
+
+Validate multi-turn conversations by checking the final message and turn count.
+
+```yaml
+evaluators:
+  - name: convo_flow
+    type: conversation
+    expected_final_field: content
+    max_turns: 5
+    weight: 0.2
+```
+
+Each output must provide a `messages` array. The evaluator compares the last
+message's `content` against the fixture's `expected.content` and fails if the
+conversation exceeds `max_turns`.
 
 ## Writing a custom evaluator
 
