@@ -35,6 +35,7 @@ uvx --from evalgate evalgate run --config .github/evalgate.yml
 
 # View results summary
 uvx --from evalgate evalgate report --summary --artifact .evalgate/results.json
+# Inside GitHub Actions, add --check-run to publish results as a check run
 ```
 
 ### 4. Update Baseline (optional)
@@ -130,6 +131,7 @@ Or with the composite action:
     config: .github/evalgate.yml
     openai_api_key: ${{ secrets.OPENAI_API_KEY }}
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+    check_run: true
 ```
 
 ## GitHub Actions Integration
@@ -144,19 +146,26 @@ on: [pull_request]
 jobs:
   evalgate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      
+
       # Generate your model outputs
       - name: Generate outputs
         run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
-      
+
       # Run EvalGate
       - uses: aotp-ventures/evalgate@main
         with:
           config: .github/evalgate.yml
+          check_run: true
 ```
+
+
+> **Note:** The workflow requires `checks: write` permission to publish the check run.
 
 ### Option 2: Direct Integration
 Or integrate directly in your existing workflow:
