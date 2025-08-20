@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, List, Tuple
 
+from .base import register
+
 
 def evaluate(outputs: Dict[str, Dict[str, Any]],
              fixtures: Dict[str, Dict[str, Any]]) -> Tuple[float, List[str]]:
@@ -28,3 +30,9 @@ def evaluate(outputs: Dict[str, Dict[str, Any]],
                 ok += 1
     total = total or 1
     return ok / total, failures
+
+
+@register("required_fields")
+def run(cfg, ev, outputs, fixtures):
+    score, fails = evaluate(outputs, fixtures)
+    return score, fails, {}

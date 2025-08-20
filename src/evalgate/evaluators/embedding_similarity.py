@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, List, Tuple
 
+from .base import register
+
 _model_cache: dict[str, Any] = {}
 
 def _get_model(name: str):
@@ -49,3 +51,17 @@ def evaluate(outputs: Dict[str, Dict[str, Any]],
             fails.append(f"{name}: similarity {sim:.2f} below threshold {threshold:.2f}")
     avg = sum(scores) / len(scores) if scores else 1.0
     return avg, fails
+
+
+@register("embedding")
+def run(cfg, ev, outputs, fixtures):
+    if not ev.expected_field:
+        raise ValueError("missing required field: expected_field")
+    score, fails = evaluate(
+        outputs=outputs,
+        fixtures=fixtures,
+        field=ev.expected_field,
+        model_name=ev.model or "sentence-transformers/all-MiniLM-L6-v2",
+        threshold=ev.threshold or 0.8,
+    )
+    return score, fails, {}

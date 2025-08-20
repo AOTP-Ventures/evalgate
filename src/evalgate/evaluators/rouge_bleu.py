@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, List, Tuple
 
+from .base import register
+
 def evaluate(outputs: Dict[str, Dict[str, Any]],
              fixtures: Dict[str, Dict[str, Any]],
              field: str,
@@ -70,3 +72,16 @@ def evaluate(outputs: Dict[str, Dict[str, Any]],
 def metric_upper(m: str) -> str:
     """Return upper-case metric name preserving trailing letters."""
     return m.upper()
+
+
+@register("rouge_bleu")
+def run(cfg, ev, outputs, fixtures):
+    if not ev.expected_field:
+        raise ValueError("missing required field: expected_field")
+    score, fails = evaluate(
+        outputs=outputs,
+        fixtures=fixtures,
+        field=ev.expected_field,
+        metric=ev.metric or "bleu",
+    )
+    return score, fails, {}

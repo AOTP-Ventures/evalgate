@@ -12,15 +12,18 @@ from pydantic import ValidationError
 from rich import print as rprint
 
 from .config import Config
-from .evaluators import category_match as ev_cat
-from .evaluators import embedding_similarity as ev_embed
-from .evaluators import json_schema as ev_schema
-from .evaluators import latency_cost as ev_budget
-from .evaluators import llm_judge as ev_llm
-from .evaluators import regex_match as ev_regex
-from .evaluators import rouge_bleu as ev_rb
-from .evaluators import required_fields as ev_req
-from .evaluators import classification_metrics as ev_cls
+from .evaluators.base import registry
+from .evaluators import (
+    category_match as _category_match,  # noqa: F401
+    embedding_similarity as _embedding_similarity,  # noqa: F401
+    json_schema as _json_schema,  # noqa: F401
+    latency_cost as _latency_cost,  # noqa: F401
+    llm_judge as _llm_judge,  # noqa: F401
+    regex_match as _regex_match,  # noqa: F401
+    rouge_bleu as _rouge_bleu,  # noqa: F401
+    required_fields as _required_fields,  # noqa: F401
+    classification_metrics as _classification_metrics,  # noqa: F401
+)
 from .util import list_paths, read_json, write_json
 from .fixture_generator import generate_suite
 from .store import load_baseline
@@ -109,135 +112,28 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         if not ev.enabled:
             continue
 
-        # Check for missing required fields upfront
-        if ev.type == "llm":
-            if not ev.prompt_path:
-                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: prompt_path")
-                continue
-            if not ev.provider:
-                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: provider")
-                continue
-            if not ev.model:
-                evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
-                continue
-        if ev.type in ("embedding", "rouge_bleu", "classification") and not ev.expected_field:
-            evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: expected_field")
-            continue
-        if ev.type == "regex" and not (ev.pattern_field or ev.pattern_path):
-            evaluator_errors.append(f"Evaluator '{ev.name}' missing pattern_field or pattern_path")
-            continue
-        
-        extra = {}
-        if ev.type == "schema":
-            schema = read_json(ev.schema_path) if ev.schema_path else {}
-            s, v = ev_schema.evaluate(o_map, schema)
-        elif ev.type == "category":
-            s, v = ev_cat.evaluate(o_map, f_map, ev.expected_field or "")
-            # Build confusion matrix for classification results
-            label_set: set[str] = set()
-            matrix: dict[str, dict[str, int]] = {}
-            for n in names:
-                exp_val = f_map.get(n, {}).get("expected", {}).get(ev.expected_field or "")
-                if exp_val is None:
-                    continue
-                got_val = o_map.get(n, {}).get(ev.expected_field or "")
-                exp_label = str(exp_val)
-                got_label = str(got_val)
-                label_set.update([exp_label, got_label])
-                matrix.setdefault(exp_label, {}).setdefault(got_label, 0)
-                matrix[exp_label][got_label] += 1
-            labels = sorted(label_set)
-            headers = ["exp\\pred"] + labels
-            rows = []
-            for exp_label in labels:
-                row = [exp_label]
-                for pred_label in labels:
-                    row.append(matrix.get(exp_label, {}).get(pred_label, 0))
-                rows.append(row)
-            tables.append({
-                "title": f"Confusion Matrix ({ev.name})",
-                "headers": headers,
-                "rows": rows,
-            })
-        elif ev.type == "budgets":
-            s, v, latency, cost = ev_budget.evaluate(f_map, {
-                "p95_latency_ms": cfg.budgets.p95_latency_ms,
-                "max_cost_usd_per_item": cfg.budgets.max_cost_usd_per_item
-            })
-        elif ev.type == "regex":
-            patterns = {}
-            if ev.pattern_path:
-                patterns.update(read_json(ev.pattern_path))
-            if ev.pattern_field:
-                for n, fx in f_map.items():
-                    patt = fx.get("expected", {}).get(ev.pattern_field)
-                    if patt is not None:
-                        patterns[n] = patt
-            s, v = ev_regex.evaluate(o_map, f_map, patterns)
-        elif ev.type == "llm":
-            # Required field validation already done above
-            try:
-                s, v = ev_llm.evaluate(
-                    outputs=o_map,
-                    fixtures=f_map,
-                    provider=ev.provider,
-                    model=ev.model,
-                    prompt_path=ev.prompt_path,
-                    api_key_env_var=ev.api_key_env_var,
-                    base_url=ev.base_url,
-                    temperature=ev.temperature or 0.1,
-                    max_tokens=ev.max_tokens or 1000
-                )
-            except Exception as e:
-                rprint(f"[red]LLM evaluator {ev.name} failed: {e}[/red]")
-                # Track this as an evaluator error, not just a low score
-                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
-                # Don't add to scores - failed evaluators shouldn't contribute to scoring
-                continue
-        elif ev.type == "rouge_bleu":
-            try:
-                s, v = ev_rb.evaluate(
-                    outputs=o_map,
-                    fixtures=f_map,
-                    field=ev.expected_field or "",
-                    metric=ev.metric or "bleu",
-                )
-            except Exception as e:
-                rprint(f"[red]ROUGE/BLEU evaluator {ev.name} failed: {e}[/red]")
-                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
-                continue
-        elif ev.type == "embedding":
-            try:
-                s, v = ev_embed.evaluate(
-                    outputs=o_map,
-                    fixtures=f_map,
-                    field=ev.expected_field or "",
-                    model_name=ev.model or "sentence-transformers/all-MiniLM-L6-v2",
-                    threshold=ev.threshold or 0.8,
-                )
-            except Exception as e:
-                rprint(f"[red]Embedding evaluator {ev.name} failed: {e}[/red]")
-                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
-                continue
-        elif ev.type == "required_fields":
-            s, v = ev_req.evaluate(o_map, f_map)
-        elif ev.type == "classification":
-            try:
-                s, v, m = ev_cls.evaluate(
-                    outputs=o_map,
-                    fixtures=f_map,
-                    field=ev.expected_field or "",
-                    multi_label=ev.multi_label or False,
-                )
-                extra["metrics"] = m
-            except Exception as e:
-                rprint(f"[red]Classification evaluator {ev.name} failed: {e}[/red]")
-                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
-                continue
-        else:
+        func = registry.get(ev.type)
+        if func is None:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
             continue
-        scores.append({"name": ev.name, "score": float(s), "weight": ev.weight, **extra})
+        try:
+            s, v, extra = func(cfg, ev, o_map, f_map)
+        except Exception as e:
+            rprint(f"[red]{ev.type} evaluator {ev.name} failed: {e}[/red]")
+            evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
+            continue
+        if extra.get("latency") is not None:
+            latency = extra["latency"]
+        if extra.get("cost") is not None:
+            cost = extra["cost"]
+        if extra.get("table") is not None:
+            tables.append(extra["table"])
+        if extra.get("plot") is not None:
+            plots.append(extra["plot"])
+        score_item = {"name": ev.name, "score": float(s), "weight": ev.weight}
+        if extra.get("metrics") is not None:
+            score_item["metrics"] = extra["metrics"]
+        scores.append(score_item)
         failures.extend(v)
 
     total_w = sum(x["weight"] for x in scores) or 1.0

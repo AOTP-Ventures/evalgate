@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Dict, Any, List, Tuple
 from ..util import p95 as p95_fn
 
+from .base import register
+
 def evaluate(fixtures: Dict[str, Dict[str, Any]],
              budgets: Dict[str, float]) -> Tuple[float, List[str], float, float]:
     """Return (score, violations, p95_latency_ms, avg_cost_usd)."""
@@ -23,4 +25,16 @@ def evaluate(fixtures: Dict[str, Dict[str, Any]],
     lat_score = 1.0 if p95_latency <= budgets["p95_latency_ms"] else max(0.0, 1 - (p95_latency - budgets["p95_latency_ms"]) / budgets["p95_latency_ms"])
     cost_score = 1.0 if avg_cost <= budgets["max_cost_usd_per_item"] else max(0.0, 1 - (avg_cost - budgets["max_cost_usd_per_item"]) / budgets["max_cost_usd_per_item"])
     return (lat_score * 0.5 + cost_score * 0.5), fails, p95_latency, avg_cost
+
+
+@register("budgets")
+def run(cfg, ev, outputs, fixtures):
+    score, fails, lat, cost = evaluate(
+        fixtures,
+        {
+            "p95_latency_ms": cfg.budgets.p95_latency_ms,
+            "max_cost_usd_per_item": cfg.budgets.max_cost_usd_per_item,
+        },
+    )
+    return score, fails, {"latency": lat, "cost": cost}
 

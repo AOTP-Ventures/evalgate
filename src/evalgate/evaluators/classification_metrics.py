@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from .base import register
+
 
 def evaluate(
     outputs: Dict[str, Dict[str, Any]],
@@ -77,3 +79,16 @@ def evaluate(
         "confusion_matrix": {exp: dict(preds) for exp, preds in confusion.items()},
     }
     return f1, fails, metrics
+
+
+@register("classification")
+def run(cfg, ev, outputs, fixtures):
+    if not ev.expected_field:
+        raise ValueError("missing required field: expected_field")
+    score, fails, metrics = evaluate(
+        outputs=outputs,
+        fixtures=fixtures,
+        field=ev.expected_field,
+        multi_label=ev.multi_label or False,
+    )
+    return score, fails, {"metrics": metrics}
