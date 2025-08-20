@@ -15,7 +15,7 @@ class Outputs(BaseModel):
 
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex" | "rouge_bleu" | "required_fields"
+    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex" | "rouge_bleu" | "required_fields" | "classification"
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
@@ -23,6 +23,7 @@ class EvaluatorCfg(BaseModel):
     metric: Optional[str] = None  # metric for rouge_bleu evaluator: "bleu" | "rouge1" | "rouge2" | "rougeL"
     pattern_field: Optional[str] = None  # name of expected field containing regex
     pattern_path: Optional[str] = None  # path to JSON mapping of name->regex
+    multi_label: Optional[bool] = False  # treat field as list of labels
     # LLM-specific fields
     provider: Optional[str] = None  # "openai" | "anthropic" | "azure" | "local"
     model: Optional[str] = None  # e.g. "gpt-4", "claude-3-5-sonnet-20241022" or embedding model name

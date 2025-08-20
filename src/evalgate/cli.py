@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import random
 import yaml
 import typer
 from pydantic import ValidationError
@@ -18,7 +19,9 @@ from .evaluators import llm_judge as ev_llm
 from .evaluators import regex_match as ev_regex
 from .evaluators import rouge_bleu as ev_rb
 from .evaluators import required_fields as ev_req
+from .evaluators import classification_metrics as ev_cls
 from .util import list_paths, read_json, write_json
+from .fixture_generator import generate_suite
 from .store import load_baseline
 from .report import render_markdown
 from .templates import (
@@ -53,6 +56,27 @@ def init(path: str = "."):
     (root / "eval" / "prompts" / "sentiment_judge.txt").write_text(
         load_sentiment_judge_prompt(), encoding="utf-8")
     rprint("[green]Initialized example EvalGate files.[/green]")
+
+
+@app.command("generate-fixtures")
+def generate_fixtures(
+    schema: str = typer.Option(..., help="Path to JSON schema"),
+    output: str = typer.Option("eval/fixtures", help="Directory to write fixtures"),
+    count: int = typer.Option(10, help="Number of fixtures to generate"),
+    seed_data: str | None = typer.Option(None, help="Optional seed data JSON file"),
+    seed: int | None = typer.Option(None, help="Random seed"),
+):
+    """Generate randomized fixtures from a schema."""
+    schema_data = read_json(schema)
+    seed_dict = read_json(seed_data) if seed_data else None
+    if seed is not None:
+        random.seed(seed)
+    fixtures = generate_suite(schema_data, count, seed_dict)
+    outdir = pathlib.Path(output)
+    outdir.mkdir(parents=True, exist_ok=True)
+    for i, fx in enumerate(fixtures, start=1):
+        write_json(outdir / f"fixture_{i:03}.json", fx)
+    rprint(f"[green]Generated {count} fixture(s) in {outdir}[/green]")
 
 @app.command()
 def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
@@ -95,13 +119,14 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             if not ev.model:
                 evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
                 continue
-        if ev.type in ("embedding", "rouge_bleu") and not ev.expected_field:
+        if ev.type in ("embedding", "rouge_bleu", "classification") and not ev.expected_field:
             evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: expected_field")
             continue
         if ev.type == "regex" and not (ev.pattern_field or ev.pattern_path):
             evaluator_errors.append(f"Evaluator '{ev.name}' missing pattern_field or pattern_path")
             continue
         
+        extra = {}
         if ev.type == "schema":
             schema = read_json(ev.schema_path) if ev.schema_path else {}
             s, v = ev_schema.evaluate(o_map, schema)
@@ -195,10 +220,23 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 continue
         elif ev.type == "required_fields":
             s, v = ev_req.evaluate(o_map, f_map)
+        elif ev.type == "classification":
+            try:
+                s, v, m = ev_cls.evaluate(
+                    outputs=o_map,
+                    fixtures=f_map,
+                    field=ev.expected_field or "",
+                    multi_label=ev.multi_label or False,
+                )
+                extra["metrics"] = m
+            except Exception as e:
+                rprint(f"[red]Classification evaluator {ev.name} failed: {e}[/red]")
+                evaluator_errors.append(f"Evaluator '{ev.name}' failed to run: {str(e)}")
+                continue
         else:
             rprint(f"[yellow]Unknown evaluator type: {ev.type}[/yellow]")
             continue
-        scores.append({"name": ev.name, "score": float(s), "weight": ev.weight})
+        scores.append({"name": ev.name, "score": float(s), "weight": ev.weight, **extra})
         failures.extend(v)
 
     total_w = sum(x["weight"] for x in scores) or 1.0
@@ -222,9 +260,15 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         rprint(f"[red]Gate failed: {len(evaluator_errors)} evaluator(s) failed to run[/red]")
     
     passed = overall >= cfg.gate.min_overall_score and regression_ok and evaluators_ok
+    score_items = []
+    for x in scores:
+        item = {"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])}
+        if "metrics" in x:
+            item["metrics"] = x["metrics"]
+        score_items.append(item)
     result = {
         "overall": overall,
-        "scores": [{"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])} for x in scores],
+        "scores": score_items,
         "failures": failures,
         "evaluator_errors": evaluator_errors,  # Separate from test failures
         "latency": latency,
