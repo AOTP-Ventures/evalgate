@@ -72,6 +72,12 @@ const config: Config = {
           label: 'Documentation',
         },
         {
+          type: 'docsVersionDropdown',
+          position: 'left',
+          dropdownItemsAfter: [{to: '/versions', label: 'All versions'}],
+          dropdownActiveClassDisabled: true,
+        },
+        {
           href: 'https://github.com/aotp-ventures/evalgate',
           label: 'GitHub',
           position: 'right',
