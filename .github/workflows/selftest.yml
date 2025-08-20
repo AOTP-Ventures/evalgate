@@ -92,6 +92,7 @@ jobs:
           name: evalgate-results
           path: .evalgate/results.json
           retention-days: 30
+          overwrite: true
       
       # Post unified results as PR comment
       - name: Post EvalGate Selftest Results
