@@ -3,11 +3,11 @@ budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
 fixtures: { path: "eval/fixtures/**/*.json" }
 outputs:  { path: ".evalgate/outputs/**/*.json" }
 evaluators:
-  - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.3 }
-  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.3 }
-  - { name: latency_cost, type: budgets, weight: 0.2 }
+  - { name: json_formatting, type: SCHEMA, schema_path: "eval/schemas/queue_item.json", weight: 0.3 }
+  - { name: priority_accuracy, type: CATEGORY, expected_field: "priority", weight: 0.3 }
+  - { name: latency_cost, type: BUDGETS, weight: 0.2 }
   # Uncomment and configure with your API key to enable LLM evaluation:
-  # - { name: content_quality, type: llm, provider: openai, model: "gpt-4", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.2 }
+  # - { name: content_quality, type: LLM, provider: openai, model: "gpt-4", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.2 }
 gate: { min_overall_score: 0.90, allow_regression: false }
 report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
 # Git ref storing baseline results. Update with `evalgate baseline update`.
