@@ -46,6 +46,31 @@ uvx --from evalgate evalgate baseline update --config .github/evalgate.yml
 
 Pull requests will be compared against these baseline results.
 
+## Conversation Fixtures
+
+When working with chat-based models, fixtures can describe full conversations.
+Each conversation fixture contains a list of `messages`, where every message has
+a `role` (such as `system`, `user`, `assistant`, or `tool`) and `content`.
+Assistant messages may optionally include `tool_calls` describing functions the
+assistant wants to invoke.
+
+Example conversation fixture:
+
+```json
+{
+  "messages": [
+    { "role": "user", "content": "Hello!" },
+    {
+      "role": "assistant",
+      "content": "Hi there!",
+      "tool_calls": [
+        { "name": "search", "arguments": { "query": "Hello!" } }
+      ]
+    }
+  ]
+}
+```
+
 ## LLM as Judge
 
 EvalGate can use LLMs to evaluate outputs for complex criteria beyond simple schema validation.
@@ -88,7 +113,10 @@ evaluators:
     prompt_path: eval/prompts/quality_judge.txt
     api_key_env_var: OPENAI_API_KEY
     weight: 0.3
+    min_score: 0.75  # fail if score < 0.75
 ```
+
+`min_score` enforces a minimum evaluator score; the run fails if the score drops below this threshold.
 
 ### 4. Set your API key
 ```bash
@@ -137,6 +165,22 @@ Or with the composite action:
     openai_api_key: ${{ secrets.OPENAI_API_KEY }}
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
+
+## Tool Usage Logs
+
+Model outputs can record tool invocations to enable deterministic evaluation of agent behavior. Each output may include a `tool_calls` array with call `name` and `args` in the order executed:
+
+```json
+{
+  "output": "...",
+  "tool_calls": [
+    {"name": "search", "args": {"query": "foo"}},
+    {"name": "lookup", "args": {"id": 1}}
+  ]
+}
+```
+
+The `tool_usage` evaluator compares these logs against expected sequences via the `expected_tool_calls` config field.
 
 ## GitHub Actions Integration
 
@@ -189,6 +233,24 @@ Or integrate directly in your existing workflow:
     path: .evalgate/results.json
     retention-days: 30
 ```
+```
+
+## Conversation Flow Evaluator
+
+Validate multi-turn conversations by checking the final message and turn count.
+
+```yaml
+evaluators:
+  - name: convo_flow
+    type: conversation
+    expected_final_field: content
+    max_turns: 5
+    weight: 0.2
+```
+
+Each output must provide a `messages` array. The evaluator compares the last
+message's `content` against the fixture's `expected.content` and fails if the
+conversation exceeds `max_turns`.
 
 ## Writing a custom evaluator
 

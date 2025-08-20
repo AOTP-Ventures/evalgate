@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -26,19 +26,26 @@ class EvaluatorType(str, Enum):
     ROUGE_BLEU = "rouge_bleu"
     REQUIRED_FIELDS = "required_fields"
     CLASSIFICATION = "classification"
+    WORKFLOW = "workflow"
+    TOOL_USAGE = "tool_usage"
+    CONVERSATION = "conversation"
 
 
 class EvaluatorCfg(BaseModel):
     name: str
     type: EvaluatorType
     weight: float = 1.0
+    min_score: float | None = None
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
+    expected_final_field: Optional[str] = None
+    max_turns: Optional[int] = None
     threshold: Optional[float] = 0.8  # cosine similarity threshold for embedding evaluator
     metric: Optional[str] = None  # metric for rouge_bleu evaluator: "bleu" | "rouge1" | "rouge2" | "rougeL"
     pattern_field: Optional[str] = None  # name of expected field containing regex
     pattern_path: Optional[str] = None  # path to JSON mapping of name->regex
     multi_label: Optional[bool] = False  # treat field as list of labels
+    expected_tool_calls: Optional[Dict[str, List[Dict[str, Any]]]] = None  # expected tool call sequence
     # LLM-specific fields
     provider: Optional[str] = None  # "openai" | "anthropic" | "azure" | "local"
     model: Optional[str] = None  # e.g. "gpt-4", "claude-3-5-sonnet-20241022" or embedding model name
@@ -47,6 +54,9 @@ class EvaluatorCfg(BaseModel):
     base_url: Optional[str] = None  # for local/custom endpoints
     temperature: Optional[float] = 0.1  # for consistent evaluation
     max_tokens: Optional[int] = 1000  # response length limit
+    transcript_field: Optional[str] = None  # field with conversation transcript
+    per_turn_scoring: Optional[bool] = False  # score each turn individually
+    workflow_path: Optional[str] = None  # path to JSON or YAML workflow DAG spec
     enabled: bool = True
 
     @field_validator("type", mode="before")

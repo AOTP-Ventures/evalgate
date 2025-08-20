@@ -29,7 +29,13 @@ def render_markdown(result: Dict[str, Any], max_failures: int = 20) -> str:
         if delta is not None:
             deltas.append((item["name"], delta))
         delta_str = f" ({delta:+.2f} vs main)" if delta is not None else ""
-        lines.append(f"- {item['name']}: {item['score']:.2f}{delta_str}")
+        status = "✅" if item.get("passed", True) else "❌"
+        min_str = (
+            f" (min {item['min_score']:.2f})" if item.get("min_score") is not None else ""
+        )
+        lines.append(
+            f"- {item['name']}: {item['score']:.2f}{delta_str} → {status}{min_str}"
+        )
     if deltas:
         lines += ["", "**Baseline Deltas**"]
         lines.append("| Metric | Δ vs baseline |")
@@ -49,6 +55,7 @@ def render_markdown(result: Dict[str, Any], max_failures: int = 20) -> str:
         f"- min_overall_score: {result['gate']['min_overall_score']} → {'✅' if result['overall'] >= result['gate']['min_overall_score'] else '❌'}",
         f"- allow_regression: {result['gate']['allow_regression']} → {'✅' if (result.get('regression_ok', True)) else '❌'}",
         f"- evaluators_ok: → {'✅' if result.get('evaluators_ok', True) else '❌'}",
+        f"- scores_ok: → {'✅' if result.get('scores_ok', True) else '❌'}",
     ]
 
     # Optional tables (e.g., confusion matrices)
