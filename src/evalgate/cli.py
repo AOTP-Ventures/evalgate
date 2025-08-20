@@ -131,11 +131,21 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             tables.append(extra["table"])
         if extra.get("plot") is not None:
             plots.append(extra["plot"])
-        score_item = {"name": ev.name, "score": float(s), "weight": ev.weight}
+        score_item = {
+            "name": ev.name,
+            "score": float(s),
+            "weight": ev.weight,
+            "min_score": ev.min_score,
+        }
         if extra.get("metrics") is not None:
             score_item["metrics"] = extra["metrics"]
+        score_item["passed"] = True if ev.min_score is None else s >= ev.min_score
         scores.append(score_item)
         failures.extend(v)
+        if not score_item["passed"]:
+            failures.append(
+                f"{ev.name}: score {s:.2f} < min_score {ev.min_score}"
+            )
 
     total_w = sum(x["weight"] for x in scores) or 1.0
     overall = sum(x["score"] * x["weight"] for x in scores) / total_w
@@ -157,10 +167,23 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     if not evaluators_ok:
         rprint(f"[red]Gate failed: {len(evaluator_errors)} evaluator(s) failed to run[/red]")
     
-    passed = overall >= cfg.gate.min_overall_score and regression_ok and evaluators_ok
+    scores_ok = all(x["passed"] for x in scores)
+    passed = (
+        overall >= cfg.gate.min_overall_score
+        and regression_ok
+        and evaluators_ok
+        and scores_ok
+    )
     score_items = []
     for x in scores:
-        item = {"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])}
+        item = {
+            "name": x["name"],
+            "score": x["score"],
+            "delta": deltas.get(x["name"]),
+            "passed": x["passed"],
+        }
+        if x.get("min_score") is not None:
+            item["min_score"] = x["min_score"]
         if "metrics" in x:
             item["metrics"] = x["metrics"]
         score_items.append(item)
@@ -171,9 +194,14 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         "evaluator_errors": evaluator_errors,  # Separate from test failures
         "latency": latency,
         "cost": cost,
-        "gate": {"min_overall_score": cfg.gate.min_overall_score, "allow_regression": cfg.gate.allow_regression, "passed": passed},
+        "gate": {
+            "min_overall_score": cfg.gate.min_overall_score,
+            "allow_regression": cfg.gate.allow_regression,
+            "passed": passed,
+        },
         "regression_ok": regression_ok,
         "evaluators_ok": evaluators_ok,
+        "scores_ok": scores_ok,
         "artifact_path": cfg.report.artifact_path,
         "tables": tables,
         "plots": plots,

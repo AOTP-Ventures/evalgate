@@ -35,6 +35,7 @@ class EvaluatorCfg(BaseModel):
     name: str
     type: EvaluatorType
     weight: float = 1.0
+    min_score: float | None = None
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
     expected_final_field: Optional[str] = None

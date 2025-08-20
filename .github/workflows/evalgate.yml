@@ -25,6 +25,7 @@ jobs:
           python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
 
       # Run EvalGate but don't fail the job yet (so we can always post a summary/comment)
+      # Per-evaluator score thresholds can be set via `min_score` in .github/evalgate.yml
       - name: Run EvalGate
         id: evalgate
         continue-on-error: true
