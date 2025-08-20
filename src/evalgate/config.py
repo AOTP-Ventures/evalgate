@@ -15,11 +15,13 @@ class Outputs(BaseModel):
 
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding"
+    type: str  # "schema" | "category" | "budgets" | "llm" | "embedding" | "regex"
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
     threshold: Optional[float] = 0.8  # cosine similarity threshold for embedding evaluator
+    pattern_field: Optional[str] = None  # name of expected field containing regex
+    pattern_path: Optional[str] = None  # path to JSON mapping of name->regex
     # LLM-specific fields
     provider: Optional[str] = None  # "openai" | "anthropic" | "azure" | "local"
     model: Optional[str] = None  # e.g. "gpt-4", "claude-3-5-sonnet-20241022" or embedding model name
