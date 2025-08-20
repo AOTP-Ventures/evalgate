@@ -144,18 +144,29 @@ on: [pull_request]
 jobs:
   evalgate:
     runs-on: ubuntu-latest
+    outputs:
+      total_score: ${{ steps.evalgate.outputs.total_score }}
+      passed: ${{ steps.evalgate.outputs.passed }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      
+
       # Generate your model outputs
       - name: Generate outputs
         run: python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
-      
+
       # Run EvalGate
       - uses: aotp-ventures/evalgate@main
+        id: evalgate
         with:
           config: .github/evalgate.yml
+
+  build:
+    needs: evalgate
+    if: ${{ needs.evalgate.outputs.passed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "EvalGate score ${{ needs.evalgate.outputs.total_score }}"
 ```
 
 ### Option 2: Direct Integration
@@ -168,11 +179,21 @@ Or integrate directly in your existing workflow:
     echo "$HOME/.local/bin" >> $GITHUB_PATH
 
 - name: Run EvalGate
-  run: uvx --from evalgate evalgate run --config .github/evalgate.yml
+  id: evalgate
+  run: |
+    uvx --from evalgate evalgate run --config .github/evalgate.yml
+    total_score=$(jq -r '.overall' .evalgate/results.json)
+    passed=$(jq -r '.gate.passed' .evalgate/results.json)
+    echo "total_score=$total_score" >> "$GITHUB_OUTPUT"
+    echo "passed=$passed" >> "$GITHUB_OUTPUT"
 
 - name: EvalGate Summary
   if: always()
   run: uvx --from evalgate evalgate report --summary --artifact ./.evalgate/results.json
+
+- name: Continue if passed
+  if: ${{ steps.evalgate.outputs.passed == 'true' }}
+  run: echo "EvalGate score ${{ steps.evalgate.outputs.total_score }}"
 
 # Optional: Upload detailed results for debugging
 - name: Upload EvalGate Results
