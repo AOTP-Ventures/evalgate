@@ -15,10 +15,12 @@ class Outputs(BaseModel):
 
 class EvaluatorCfg(BaseModel):
     name: str
-    type: str  # "schema" | "category" | "budgets" | "llm"
+    type: str  # "schema" | "category" | "budgets" | "llm" | "regex"
     weight: float = 1.0
     schema_path: Optional[str] = None
     expected_field: Optional[str] = None
+    pattern_field: Optional[str] = None  # name of expected field containing regex
+    pattern_path: Optional[str] = None  # path to JSON mapping of name->regex
     # LLM-specific fields
     provider: Optional[str] = None  # "openai" | "anthropic" | "azure" | "local"
     model: Optional[str] = None  # e.g. "gpt-4", "claude-3-5-sonnet-20241022"
