@@ -4,7 +4,10 @@
  * work well for content-centric websites.
  */
 
-/* EvalGate theme colors */
+/* Import Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* EvalGate theme colors for Docusaurus */
 :root {
   --ifm-color-primary: #7c3aed;
   --ifm-color-primary-dark: #6d28d9;
@@ -15,8 +18,6 @@
   --ifm-color-primary-lightest: #a855f7;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(124, 58, 237, 0.1);
-  --ifm-navbar-background-color: #ffffff;
-  --ifm-navbar-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 /* Disable dark theme since we disabled the toggle */
@@ -24,92 +25,4 @@
   display: none;
 }
 
-/* Better navbar styling */
-.navbar {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-}
 
-.navbar__logo {
-  margin-right: 0.75rem;
-}
-
-/* Better button styling */
-.button {
-  border-radius: 0.5rem;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.button--primary {
-  background-color: var(--ifm-color-primary);
-  border-color: var(--ifm-color-primary);
-}
-
-.button--primary:hover {
-  background-color: var(--ifm-color-primary-dark);
-  border-color: var(--ifm-color-primary-dark);
-}
-
-/* Better footer styling */
-.footer {
-  background: #1f2937;
-}
-
-.footer__copyright {
-  color: #9ca3af;
-}
-
-/* Fix for landing page to override Docusaurus defaults */
-.main-wrapper {
-  min-height: 100vh;
-}
-
-/* Hide any default hero sections */
-.hero {
-  display: none;
-}
-
-/* Ensure proper spacing */
-.container {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* Better code block styling */
-.theme-code-block {
-  border-radius: 0.5rem;
-}
-
-/* Better documentation styling */
-.markdown {
-  line-height: 1.7;
-}
-
-.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
-  color: #1f2937;
-  font-weight: 600;
-}
-
-.markdown h1 {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-/* Better table styling */
-.markdown table {
-  border-radius: 0.5rem;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.markdown th {
-  background-color: #f9fafb;
-  font-weight: 600;
-  color: #374151;
-}
-
-/* Fix any potential navbar overlap */
-.main-wrapper {
-  padding-top: 0;
-}

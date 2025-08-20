@@ -36,6 +36,19 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    async function tailwindPlugin(context, options) {
+      return {
+        name: 'docusaurus-tailwindcss',
+        configurePostCss(postcssOptions) {
+          // Add Tailwind CSS v4
+          postcssOptions.plugins.push(require('@tailwindcss/postcss'));
+          return postcssOptions;
+        },
+      };
+    },
+  ],
+
   presets: [
     [
       'classic',
