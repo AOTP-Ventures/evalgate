@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, List
 
-def render_markdown(result: Dict[str, Any]) -> str:
+
+def render_markdown(result: Dict[str, Any], max_failures: int = 20) -> str:
     # Show evaluator errors prominently in status
     evaluator_errors = result.get("evaluator_errors", [])
     if evaluator_errors:
@@ -22,17 +23,26 @@ def render_markdown(result: Dict[str, Any]) -> str:
         lines.append("")
     
     lines.append("**Scores**")
+    deltas = []
     for item in result["scores"]:
         delta = item.get("delta")
+        if delta is not None:
+            deltas.append((item["name"], delta))
         delta_str = f" ({delta:+.2f} vs main)" if delta is not None else ""
         lines.append(f"- {item['name']}: {item['score']:.2f}{delta_str}")
+    if deltas:
+        lines += ["", "**Baseline Deltas**"]
+        lines.append("| Metric | Δ vs baseline |")
+        lines.append("| --- | --- |")
+        for name, delta in deltas:
+            lines.append(f"| {name} | {delta:+.2f} |")
     if result.get("latency") is not None and result.get("cost") is not None:
         lines.append(f"- Latency/Cost: p95 {int(result['latency'])}ms / ${result['cost']:.3f}")
     lines += ["", f"**Failures ({len(result['failures'])})**"]
-    for f in result["failures"][:20]:
+    for f in result["failures"][:max_failures]:
         lines.append(f"- {f}")
-    if len(result["failures"]) > 20:
-        lines.append(f"- … +{len(result['failures'])-20} more")
+    if len(result["failures"]) > max_failures:
+        lines.append(f"- … +{len(result['failures'])-max_failures} more")
     lines += [
         "",
         "**Gate**",
@@ -55,9 +65,14 @@ def render_markdown(result: Dict[str, Any]) -> str:
 
     # Optional plots (links)
     for plot in result.get("plots", []):
-        url = plot.get("url")
         title = plot.get("title", "plot")
-        if url:
+        spark = plot.get("sparkline")
+        url = plot.get("url")
+        if spark and url:
+            lines += ["", f"[![{title}]({spark})]({url})"]
+        elif url:
             lines += ["", f"![{title}]({url})"]
+        elif spark:
+            lines += ["", f"![{title}]({spark})"]
 
     return "\n".join(lines)
