@@ -55,6 +55,17 @@ def _merge_seed(data: Any, seed: Any) -> Any:
         for k, v in seed.items():
             merged[k] = _merge_seed(data.get(k), v) if k in data else v
         return merged
+    if isinstance(seed, list) and isinstance(data, list):
+        merged_list: List[Any] = []
+        max_len = max(len(seed), len(data))
+        for i in range(max_len):
+            if i < len(seed) and i < len(data):
+                merged_list.append(_merge_seed(data[i], seed[i]))
+            elif i < len(seed):
+                merged_list.append(seed[i])
+            else:
+                merged_list.append(data[i])
+        return merged_list
     return seed
 
 

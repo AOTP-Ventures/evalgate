@@ -6,6 +6,8 @@ import os
 import pathlib
 import random
 import subprocess
+import urllib.error
+import urllib.request
 import yaml
 import typer
 from pydantic import ValidationError
@@ -23,11 +25,13 @@ from .evaluators import (
     rouge_bleu as _rouge_bleu,  # noqa: F401
     required_fields as _required_fields,  # noqa: F401
     classification_metrics as _classification_metrics,  # noqa: F401
+    conversation_flow as _conversation_flow,  # noqa: F401
 )
 from .util import list_paths, read_json, write_json
 from .fixture_generator import generate_suite
 from .store import load_baseline
 from .report import render_markdown
+from . import cache
 from .templates import (
     load_default_config,
     load_schema_example, 
@@ -84,8 +88,11 @@ def generate_fixtures(
 
 @app.command()
 def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
-        output: str = typer.Option(".evalgate/results.json", help="Where to write results JSON")):
+        output: str = typer.Option(".evalgate/results.json", help="Where to write results JSON"),
+        clear_cache: bool = typer.Option(False, "--clear-cache", help="Clear cached LLM responses before run")):
     """Run evals and write a results artifact."""
+    if clear_cache:
+        cache.clear()
     try:
         cfg = Config.model_validate(yaml.safe_load(pathlib.Path(config).read_text(encoding="utf-8")))
     except ValidationError as e:
@@ -130,11 +137,21 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             tables.append(extra["table"])
         if extra.get("plot") is not None:
             plots.append(extra["plot"])
-        score_item = {"name": ev.name, "score": float(s), "weight": ev.weight}
+        score_item = {
+            "name": ev.name,
+            "score": float(s),
+            "weight": ev.weight,
+            "min_score": ev.min_score,
+        }
         if extra.get("metrics") is not None:
             score_item["metrics"] = extra["metrics"]
+        score_item["passed"] = True if ev.min_score is None else s >= ev.min_score
         scores.append(score_item)
         failures.extend(v)
+        if not score_item["passed"]:
+            failures.append(
+                f"{ev.name}: score {s:.2f} < min_score {ev.min_score}"
+            )
 
     total_w = sum(x["weight"] for x in scores) or 1.0
     overall = sum(x["score"] * x["weight"] for x in scores) / total_w
@@ -156,10 +173,23 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     if not evaluators_ok:
         rprint(f"[red]Gate failed: {len(evaluator_errors)} evaluator(s) failed to run[/red]")
     
-    passed = overall >= cfg.gate.min_overall_score and regression_ok and evaluators_ok
+    scores_ok = all(x["passed"] for x in scores)
+    passed = (
+        overall >= cfg.gate.min_overall_score
+        and regression_ok
+        and evaluators_ok
+        and scores_ok
+    )
     score_items = []
     for x in scores:
-        item = {"name": x["name"], "score": x["score"], "delta": deltas.get(x["name"])}
+        item = {
+            "name": x["name"],
+            "score": x["score"],
+            "delta": deltas.get(x["name"]),
+            "passed": x["passed"],
+        }
+        if x.get("min_score") is not None:
+            item["min_score"] = x["min_score"]
         if "metrics" in x:
             item["metrics"] = x["metrics"]
         score_items.append(item)
@@ -170,9 +200,14 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         "evaluator_errors": evaluator_errors,  # Separate from test failures
         "latency": latency,
         "cost": cost,
-        "gate": {"min_overall_score": cfg.gate.min_overall_score, "allow_regression": cfg.gate.allow_regression, "passed": passed},
+        "gate": {
+            "min_overall_score": cfg.gate.min_overall_score,
+            "allow_regression": cfg.gate.allow_regression,
+            "passed": passed,
+        },
         "regression_ok": regression_ok,
         "evaluators_ok": evaluators_ok,
+        "scores_ok": scores_ok,
         "artifact_path": cfg.report.artifact_path,
         "tables": tables,
         "plots": plots,
@@ -218,6 +253,11 @@ def report(
     summary: bool = typer.Option(False, "--summary", help="Write to $GITHUB_STEP_SUMMARY"),
     artifact: str = typer.Option(".evalgate/results.json", help="Path to results JSON"),
     max_failures: int = typer.Option(20, "--max-failures", help="Max failures to show"),
+    check_run: bool = typer.Option(
+        False,
+        "--check-run",
+        help="Create a GitHub check run with summary and annotations",
+    ),
 ):
     """Render a markdown summary from results."""
     data = read_json(artifact)
@@ -226,6 +266,54 @@ def report(
         pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(md, encoding="utf-8")
     else:
         print(md)
+    if check_run:
+        token = os.environ.get('GITHUB_TOKEN')
+        sha = os.environ.get('GITHUB_SHA')
+        repo = os.environ.get('GITHUB_REPOSITORY')
+        if not (token and sha and repo):
+            rprint('[yellow]Missing GITHUB_TOKEN, GITHUB_SHA, or GITHUB_REPOSITORY for check run[/yellow]')
+        else:
+            annotations = []
+            for fail in data.get('failures', [])[:50]:
+                path = ''
+                msg = fail
+                if ':' in fail:
+                    name, msg_part = fail.split(':', 1)
+                    path = f'eval/fixtures/{name}.json'
+                    msg = msg_part.strip()
+                annotations.append({
+                    'path': path,
+                    'start_line': 1,
+                    'end_line': 1,
+                    'annotation_level': 'failure',
+                    'message': msg[:1000],
+                })
+            payload = {
+                'name': 'EvalGate',
+                'head_sha': sha,
+                'status': 'completed',
+                'conclusion': 'success' if data.get('gate', {}).get('passed') else 'failure',
+                'output': {
+                    'title': 'EvalGate',
+                    'summary': md[:65535],
+                    'annotations': annotations,
+                },
+            }
+            req = urllib.request.Request(
+                f'https://api.github.com/repos/{repo}/check-runs',
+                data=json.dumps(payload).encode('utf-8'),
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'evalgate',
+                },
+                method='POST',
+            )
+            try:
+                urllib.request.urlopen(req)
+            except urllib.error.URLError as e:
+                rprint(f'[yellow]Failed to create check run: {e}[/yellow]')
 
 def main():
     app()

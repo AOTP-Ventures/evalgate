@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
 
 from .base import register
+from .. import cache
 
 
 def _load_prompt_template(prompt_path: str) -> str:
@@ -16,14 +17,21 @@ def _load_prompt_template(prompt_path: str) -> str:
         raise ValueError(f"Failed to load prompt template from {prompt_path}: {e}")
 
 
-def _format_prompt(template: str, input_data: Dict[str, Any], output_data: Dict[str, Any], 
-                   expected_data: Optional[Dict[str, Any]] = None) -> str:
-    """Format prompt template with input, output, and expected data."""
+def _format_prompt(
+    template: str,
+    input_data: Dict[str, Any],
+    output_data: Dict[str, Any],
+    expected_data: Optional[Dict[str, Any]] = None,
+    transcript: Optional[str] = None,
+) -> str:
+    """Format prompt template with input, output, expected, and transcript data."""
     context = {
         "input": json.dumps(input_data, indent=2),
         "output": json.dumps(output_data, indent=2),
-        "expected": json.dumps(expected_data or {}, indent=2)
+        "expected": json.dumps(expected_data or {}, indent=2),
     }
+    if transcript is not None:
+        context["transcript"] = transcript
     
     # Simple template substitution
     formatted = template
@@ -188,15 +196,30 @@ def _call_local(model: str, prompt: str, temperature: float = 0.1,
         raise RuntimeError(f"Local API call failed: {e}")
 
 
-def evaluate(outputs: Dict[str, Dict[str, Any]], 
-             fixtures: Dict[str, Dict[str, Any]],
-             provider: str,
-             model: str,
-             prompt_path: str,
-             api_key_env_var: Optional[str] = None,
-             base_url: Optional[str] = None,
-             temperature: float = 0.1,
-             max_tokens: int = 1000) -> Tuple[float, List[str]]:
+def _concat_transcript(transcript: Any) -> str:
+    if isinstance(transcript, list):
+        return "\n".join(
+            f"{t.get('role', '')}: {t.get('content', '')}" if isinstance(t, dict) else str(t)
+            for t in transcript
+        )
+    if isinstance(transcript, dict):
+        return f"{transcript.get('role', '')}: {transcript.get('content', '')}"
+    return str(transcript or "")
+
+
+def evaluate(
+    outputs: Dict[str, Dict[str, Any]],
+    fixtures: Dict[str, Dict[str, Any]],
+    provider: str,
+    model: str,
+    prompt_path: str,
+    api_key_env_var: Optional[str] = None,
+    base_url: Optional[str] = None,
+    temperature: float = 0.1,
+    max_tokens: int = 1000,
+    transcript_field: Optional[str] = None,
+    per_turn_scoring: bool = False,
+) -> Tuple[float, List[str]]:
     """
     Evaluate outputs using an LLM as judge.
     
@@ -229,46 +252,101 @@ def evaluate(outputs: Dict[str, Dict[str, Any]],
     
     scores = []
     details = []
-    
+
     # Evaluate each output
     for name in outputs.keys():
         output_data = outputs[name]
         fixture_data = fixtures.get(name, {})
         input_data = fixture_data.get("input", {})
         expected_data = fixture_data.get("expected", {})
-        
-        # Format prompt
-        formatted_prompt = _format_prompt(prompt_template, input_data, output_data, expected_data)
-        
+        transcript_raw = None
+        if transcript_field:
+            transcript_raw = output_data.get(transcript_field) or fixture_data.get(transcript_field)
+
+        if per_turn_scoring and transcript_raw and isinstance(transcript_raw, list):
+            for idx, turn in enumerate(transcript_raw):
+                transcript_text = _concat_transcript(turn)
+                formatted_prompt = _format_prompt(
+                    prompt_template, input_data, output_data, expected_data, transcript_text
+                )
+                try:
+                    if provider == "openai":
+                        if not api_key:
+                            raise ValueError("API key required for OpenAI provider")
+                        response = _call_openai(
+                            model, formatted_prompt, api_key, temperature, max_tokens, base_url
+                        )
+                    elif provider == "anthropic":
+                        if not api_key:
+                            raise ValueError("API key required for Anthropic provider")
+                        response = _call_anthropic(
+                            model, formatted_prompt, api_key, temperature, max_tokens
+                        )
+                    elif provider == "azure":
+                        if not api_key:
+                            raise ValueError("API key required for Azure provider")
+                        response = _call_azure(
+                            model, formatted_prompt, api_key, temperature, max_tokens, base_url
+                        )
+                    elif provider == "local":
+                        response = _call_local(
+                            model, formatted_prompt, temperature, max_tokens, base_url
+                        )
+                    else:
+                        raise ValueError(f"Unknown provider: {provider}")
+
+                    score = _extract_score_from_response(response)
+                    scores.append(score)
+                    if score < 0.7:
+                        details.append(
+                            f"{name}[{idx}]: Score {score:.2f} - {response[:100]}..."
+                        )
+                except Exception as e:
+                    scores.append(0.0)
+                    details.append(
+                        f"{name}[{idx}]: Evaluation failed - {str(e)}"
+                    )
+            continue
+
+        transcript_text = None
+        if transcript_raw is not None:
+            transcript_text = _concat_transcript(transcript_raw)
+
+        formatted_prompt = _format_prompt(
+            prompt_template, input_data, output_data, expected_data, transcript_text
+        )
+
         try:
-            # Call appropriate provider
-            if provider == "openai":
-                if not api_key:
-                    raise ValueError("API key required for OpenAI provider")
-                response = _call_openai(model, formatted_prompt, api_key, temperature, max_tokens, base_url)
-            elif provider == "anthropic":
-                if not api_key:
-                    raise ValueError("API key required for Anthropic provider")
-                response = _call_anthropic(model, formatted_prompt, api_key, temperature, max_tokens)
-            elif provider == "azure":
-                if not api_key:
-                    raise ValueError("API key required for Azure provider")
-                response = _call_azure(model, formatted_prompt, api_key, temperature, max_tokens, base_url)
-            elif provider == "local":
-                response = _call_local(model, formatted_prompt, temperature, max_tokens, base_url)
+            cached = cache.get(model, formatted_prompt)
+            if cached is not None:
+                response = cached
             else:
-                raise ValueError(f"Unknown provider: {provider}")
+                if provider == "openai":
+                    if not api_key:
+                        raise ValueError("API key required for OpenAI provider")
+                    response = _call_openai(model, formatted_prompt, api_key, temperature, max_tokens, base_url)
+                elif provider == "anthropic":
+                    if not api_key:
+                        raise ValueError("API key required for Anthropic provider")
+                    response = _call_anthropic(model, formatted_prompt, api_key, temperature, max_tokens)
+                elif provider == "azure":
+                    if not api_key:
+                        raise ValueError("API key required for Azure provider")
+                    response = _call_azure(model, formatted_prompt, api_key, temperature, max_tokens, base_url)
+                elif provider == "local":
+                    response = _call_local(model, formatted_prompt, temperature, max_tokens, base_url)
+                else:
+                    raise ValueError(f"Unknown provider: {provider}")
+                cache.set(model, formatted_prompt, response)
             
             # Extract score from response
             score = _extract_score_from_response(response)
             scores.append(score)
-            
-            # Store detailed result
-            if score < 0.7:  # Only store details for low scores to avoid clutter
+
+            if score < 0.7:
                 details.append(f"{name}: Score {score:.2f} - {response[:100]}...")
-                
+
         except Exception as e:
-            # If evaluation fails for this item, give it a low score and record the error
             scores.append(0.0)
             details.append(f"{name}: Evaluation failed - {str(e)}")
     
@@ -296,5 +374,7 @@ def run(cfg, ev, outputs, fixtures):
         base_url=ev.base_url,
         temperature=ev.temperature or 0.1,
         max_tokens=ev.max_tokens or 1000,
+        transcript_field=ev.transcript_field,
+        per_turn_scoring=ev.per_turn_scoring or False,
     )
     return score, fails, {}

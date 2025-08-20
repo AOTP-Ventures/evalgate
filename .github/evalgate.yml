@@ -4,7 +4,7 @@ fixtures: { path: "eval/fixtures/**/*.json" }
 outputs:  { path: ".evalgate/outputs/**/*.json" }
 evaluators:
   - { name: json_formatting, type: schema, schema_path: "eval/schemas/queue_item.json", weight: 0.3 }
-  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.3 }
+  - { name: priority_accuracy, type: category, expected_field: "priority", weight: 0.3, min_score: 0.8 }
   - { name: latency_cost, type: budgets, weight: 0.2 }
   # Uncomment and configure with your API key to enable LLM evaluation:
   # - { name: content_quality, type: llm, provider: openai, model: "gpt-4", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.2 }
