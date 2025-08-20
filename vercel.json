@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd website && npm run build",
+  "outputDirectory": "website/build",
+  "installCommand": "cd website && npm install",
+  "devCommand": "cd website && npm start -- --port $PORT",
+  "framework": null
+}
