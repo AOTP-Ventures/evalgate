@@ -1,106 +1,82 @@
-# EvalGate Documentation Website
+# EvalGate Frontend
 
-This is the official EvalGate documentation website built with [Docusaurus](https://docusaurus.io/). It serves both human-readable documentation and LLM-optimized endpoints.
+A modern, responsive landing page for EvalGate - the deterministic, local-only evaluation tool for GitHub PR checks.
 
 ## Features
 
-- **Landing Page** - Recreated pixel-perfect design from original site
-- **Versioned Documentation** - Support for v0.2.0, v0.3.0, and future versions
-- **LLM Endpoints** - Raw markdown files for AI agent consumption
-- **13+ Evaluator Types** - Comprehensive documentation with examples
-- **GitHub Actions Integration** - Complete CI/CD setup guides
-- **Real-world Examples** - Customer support, RAG, code generation, etc.
+- **Next.js 15** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Lucide React** for icons
+- **Responsive design** that works on all devices
+- **SEO optimized** with proper meta tags
 
-## Development
+## Getting Started
+
+### Prerequisites
+
+- Node.js (Latest LTS version recommended)
+- npm or yarn
 
 ### Installation
+
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-### Local Development
+2. Run the development server:
 ```bash
-npm start
+npm run dev
 ```
-Opens http://localhost:3000 with hot reload.
 
-### Build
+3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Building for Production
+
 ```bash
 npm run build
 ```
-Generates static content into the `build` directory.
 
-### Update LLM Documentation
-```bash
-npm run update-docs
-```
-Syncs complete.md files with individual documentation pages.
+### Deploying to Vercel
 
-## Deployment
+This project is configured to deploy automatically on Vercel. Simply connect your repository to Vercel and it will handle the deployment.
 
-### Vercel (Recommended)
-
-1. Connect this repository to Vercel
-2. Set build directory to `website/`  
-3. Build command: `npm run build`
-4. Output directory: `build/`
-5. Point evalgate.aotp.ai domain to the deployment
-
-### Manual Deployment
-
-```bash
-# Build the site
-npm run build
-
-# Serve locally to test
-npm run serve
-```
-
-## LLM Endpoints
-
-The site provides raw markdown documentation for LLMs:
-
-- `/complete.md` - Latest version (v0.3.0) complete documentation
-- `/v0.2.0-complete.md` - Legacy v0.2.0 documentation  
-- `/v0.3.0-complete.md` - v0.3.0 complete documentation (auto-generated)
-
-These files are automatically updated during build from the individual documentation pages.
-
-## Documentation Structure
+## Project Structure
 
 ```
-docs/                    # Latest version docs (v0.3.0)
-├── intro.md            # Quick start guide
-├── configuration.md    # Complete YAML reference  
-├── evaluators.md       # All 13+ evaluator types
-├── github-actions.md   # CI/CD integration
-└── examples.md         # Real-world use cases
-
-versioned_docs/         # Historical versions
-├── version-v0.2.0/    # Legacy documentation
-└── version-v0.3.0/    # Frozen v0.3.0 docs
-
-static/                 # LLM-optimized endpoints
-├── complete.md         # Latest complete docs
-├── v0.2.0-complete.md # Legacy complete docs
-└── v0.3.0-complete.md # v0.3.0 complete docs
+src/
+├── app/
+│   ├── globals.css      # Global styles
+│   ├── layout.tsx       # Root layout with metadata
+│   └── page.tsx         # Main landing page
+└── ...
 ```
 
-## Adding New Versions
+## Landing Page Sections
 
-```bash
-# Create a new version
-npm run docusaurus docs:version v0.4.0
+The landing page includes the following sections:
 
-# Update complete docs
-npm run update-docs
-```
+1. **Header** - Navigation with logo and CTA button
+2. **Hero Section** - Main value proposition and CTAs
+3. **Features** - Core evaluation capabilities
+4. **Target Audience** - Who EvalGate is built for
+5. **How It Works** - 4-step process explanation
+6. **Privacy & Security** - Local-only data handling
+7. **CTA Section** - Final call-to-action
+8. **Footer** - Company information
 
-## Contributing
+## Customization
 
-1. Update documentation in `docs/` directory
-2. Run `npm run update-docs` to sync LLM endpoints  
-3. Test locally with `npm start`
-4. Commit and deploy
+The landing page is built with Tailwind CSS classes and can be easily customized by modifying the component in `src/app/page.tsx`.
 
-The site automatically rebuilds on push to main branch when connected to Vercel.
+## Technologies Used
+
+- [Next.js](https://nextjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Lucide React](https://lucide.dev/)
+
+## License
+
+© 2024 AOTP Ventures. All rights reserved.
