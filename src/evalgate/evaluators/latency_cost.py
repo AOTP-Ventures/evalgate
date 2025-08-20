@@ -15,9 +15,9 @@ def evaluate(fixtures: Dict[str, Dict[str, Any]],
         latencies.append(lat)
         costs.append(cost)
         if lat > budgets["p95_latency_ms"]:
-            fails.append(f"{name}: latency {lat}ms > {budgets[p95_latency_ms]}ms")
+            fails.append(f"{name}: latency {lat}ms > {budgets['p95_latency_ms']}ms")
         if cost > budgets["max_cost_usd_per_item"]:
-            fails.append(f"{name}: cost ${cost} > ${budgets[max_cost_usd_per_item]}")
+            fails.append(f"{name}: cost ${cost} > ${budgets['max_cost_usd_per_item']}")
     p95_latency = p95_fn(latencies)
     avg_cost = sum(costs) / (len(costs) or 1)
     lat_score = 1.0 if p95_latency <= budgets["p95_latency_ms"] else max(0.0, 1 - (p95_latency - budgets["p95_latency_ms"]) / budgets["p95_latency_ms"])
