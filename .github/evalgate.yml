@@ -10,5 +10,6 @@ evaluators:
   # - { name: content_quality, type: llm, provider: openai, model: "gpt-4", prompt_path: "eval/prompts/quality_judge.txt", api_key_env_var: "OPENAI_API_KEY", weight: 0.2 }
 gate: { min_overall_score: 0.90, allow_regression: false }
 report: { pr_comment: true, artifact_path: ".evalgate/results.json" }
+# Git ref storing baseline results. Update with `evalgate baseline update`.
 baseline: { ref: "origin/main" }
 telemetry: { mode: "local_only" }

@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import random
+import subprocess
 import yaml
 import typer
 from pydantic import ValidationError
@@ -287,6 +288,33 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         raise typer.Exit(1)
     else:
         rprint("[green]EvalGate PASSED[/green]")
+
+baseline_app = typer.Typer(help="Manage baseline results", no_args_is_help=True)
+app.add_typer(baseline_app, name="baseline")
+
+@baseline_app.command("update")
+def baseline_update(config: str = typer.Option(..., help="Path to evalgate YAML"),
+                    message: str = typer.Option("Update EvalGate baseline", help="Commit message")):
+    """Run evals and commit results to the baseline ref."""
+    try:
+        cfg = Config.model_validate(yaml.safe_load(pathlib.Path(config).read_text(encoding="utf-8")))
+    except ValidationError as e:
+        rprint("[red]Invalid config:[/red]", e)
+        raise typer.Exit(2)
+    typer.invoke(run, config=config, output=cfg.report.artifact_path)
+    ref = cfg.baseline.ref
+    artifact = cfg.report.artifact_path
+    remote, branch = (ref.split("/", 1) if "/" in ref else (None, ref))
+    current = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True).strip()
+    if remote:
+        subprocess.check_call(["git", "fetch", remote, branch])
+    subprocess.check_call(["git", "checkout", branch])
+    subprocess.check_call(["git", "add", artifact])
+    subprocess.check_call(["git", "commit", "-m", message])
+    if remote:
+        subprocess.check_call(["git", "push", remote, branch])
+    subprocess.check_call(["git", "checkout", current])
+    rprint(f"[green]Committed {artifact} to {ref}[/green]")
 
 @app.command()
 def report(pr: bool = typer.Option(False, "--pr", help="(future) post PR comment via API"),

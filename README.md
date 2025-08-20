@@ -37,6 +37,15 @@ uvx --from evalgate evalgate run --config .github/evalgate.yml
 uvx --from evalgate evalgate report --summary --artifact .evalgate/results.json
 ```
 
+### 4. Update Baseline (optional)
+When your fixtures or model outputs change, update the stored baseline results. This runs the evals and commits the results to the git ref specified by `baseline.ref` (default `origin/main`).
+
+```bash
+uvx --from evalgate evalgate baseline update --config .github/evalgate.yml
+```
+
+Pull requests will be compared against these baseline results.
+
 ## LLM as Judge
 
 EvalGate can use LLMs to evaluate outputs for complex criteria beyond simple schema validation.
