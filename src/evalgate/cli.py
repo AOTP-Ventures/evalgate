@@ -1,6 +1,9 @@
 
 from __future__ import annotations
-import os, json, pathlib, sys, yaml
+import json
+import os
+import pathlib
+import yaml
 import typer
 from pydantic import ValidationError
 from rich import print as rprint
@@ -10,6 +13,7 @@ from .evaluators import json_schema as ev_schema
 from .evaluators import category_match as ev_cat
 from .evaluators import latency_cost as ev_budget
 from .evaluators import llm_judge as ev_llm
+from .evaluators import regex_match as ev_regex
 from .store import load_baseline
 from .report import render_markdown
 from .templates import (
@@ -70,7 +74,8 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
     latency = cost = None
 
     for ev in cfg.evaluators:
-        if not ev.enabled: continue
+        if not ev.enabled:
+            continue
         
         # Check for missing required fields upfront
         if ev.type == "llm":
@@ -83,6 +88,9 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
             if not ev.model:
                 evaluator_errors.append(f"Evaluator '{ev.name}' missing required field: model")
                 continue
+        if ev.type == "regex" and not (ev.pattern_field or ev.pattern_path):
+            evaluator_errors.append(f"Evaluator '{ev.name}' missing pattern_field or pattern_path")
+            continue
         
         if ev.type == "schema":
             schema = read_json(ev.schema_path) if ev.schema_path else {}
@@ -94,6 +102,16 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
                 "p95_latency_ms": cfg.budgets.p95_latency_ms,
                 "max_cost_usd_per_item": cfg.budgets.max_cost_usd_per_item
             })
+        elif ev.type == "regex":
+            patterns = {}
+            if ev.pattern_path:
+                patterns.update(read_json(ev.pattern_path))
+            if ev.pattern_field:
+                for n, fx in f_map.items():
+                    patt = fx.get("expected", {}).get(ev.pattern_field)
+                    if patt is not None:
+                        patterns[n] = patt
+            s, v = ev_regex.evaluate(o_map, f_map, patterns)
         elif ev.type == "llm":
             # Required field validation already done above
             try:
