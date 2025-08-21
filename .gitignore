@@ -15,6 +15,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+# Exception for website source lib directory
+!website/src/lib/
 lib64/
 parts/
 sdist/
