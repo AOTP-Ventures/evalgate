@@ -292,6 +292,8 @@ Semantic similarity using sentence transformers.
 ### ROUGE/BLEU Evaluator
 Standard text generation quality metrics.
 
+**Dependencies:** `sacrebleu` and `rouge-score` (install with `pip install sacrebleu rouge-score`)
+
 **Configuration:**
 ```yaml
 - name: text_quality
