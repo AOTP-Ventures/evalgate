@@ -338,15 +338,38 @@ State machine and workflow process validation.
 **Use Cases:** Complex workflows, state machines, process validation
 
 ### Regex Match Evaluator
-Pattern-based text validation.
+Pattern-based text validation. Patterns can be provided either via:
+
+1. `pattern_path` – a JSON file mapping fixture names to regex patterns
+2. `pattern_field` – a field inside each fixture's `expected` block
+
+If both are supplied, patterns from the JSON file are loaded first and then
+overridden by per-fixture patterns.
 
 **Configuration:**
 ```yaml
 - name: format_validation
   type: regex
-  expected_field: "phone_number"
-  pattern: "^\\+?1?-?\\(?\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{4}$"
+  pattern_field: "phone_regex"
+  pattern_path: eval/patterns.json
   weight: 0.2
+```
+
+**Fixture Example:**
+```yaml
+fixtures:
+  phone_case:
+    inputs:
+      phone_number: "555-123-4567"
+    expected:
+      phone_regex: "^\\+?1?-?\\(?\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{4}$"
+```
+
+**Patterns JSON Example (`eval/patterns.json`):**
+```json
+{
+  "phone_case": "^\\+?1?-?\\(?\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{4}$"
+}
 ```
 
 **Use Cases:** Format validation, structured text, data extraction
