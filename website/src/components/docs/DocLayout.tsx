@@ -1,19 +1,40 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, CheckSquare } from 'lucide-react';
-import { docNavigation } from '@/lib/docs';
+import { NavigationStructure } from '@/lib/navigation';
 import { VersionSelector } from './VersionSelector';
 
 interface DocLayoutProps {
   children: ReactNode;
+  version?: string;
 }
 
-export function DocLayout({ children }: DocLayoutProps) {
+export function DocLayout({ children, version }: DocLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navigation, setNavigation] = useState<NavigationStructure | null>(null);
   const pathname = usePathname();
+  
+  // Fetch navigation data when version changes
+  useEffect(() => {
+    if (!version) return;
+    
+    const fetchNavigation = async () => {
+      try {
+        const response = await fetch(`/api/docs/${version}/navigation`);
+        if (response.ok) {
+          const navData = await response.json();
+          setNavigation(navData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch navigation:', error);
+      }
+    };
+    
+    fetchNavigation();
+  }, [version]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -63,48 +84,56 @@ export function DocLayout({ children }: DocLayoutProps) {
         >
           <nav className="h-full overflow-y-auto p-6">
             {/* Version Selector */}
-            <VersionSelector className="mb-8" />
+            <VersionSelector className="mb-8" currentVersion={version} />
             
-            {docNavigation.map((section) => (
-              <div key={section.title} className="mb-8">
-                <h3 className="mb-3 text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                  {section.title}
-                </h3>
-                <ul className="space-y-2">
-                  {section.items.map((item) => {
-                    const href = item.slug ? `/docs/${item.slug}` : '/docs';
-                    const isActive = pathname === href;
-                    
-                    return (
-                      <li key={item.slug}>
-                        <Link
-                          href={href}
-                          onClick={() => setSidebarOpen(false)}
-                          className={`block px-3 py-2 rounded-lg transition-colors group ${
-                            isActive
-                              ? 'bg-violet-50 border-l-2 border-violet-500'
-                              : 'hover:bg-gray-50 border-l-2 border-transparent hover:border-gray-200'
-                          }`}
-                        >
-                          <div className={`font-medium text-sm ${
-                            isActive ? 'text-violet-700' : 'text-gray-900 group-hover:text-gray-900'
-                          }`}>
-                            {item.title}
-                          </div>
-                          {item.description && (
-                            <div className={`text-xs mt-1 ${
-                              isActive ? 'text-violet-600' : 'text-gray-500 group-hover:text-gray-600'
+            {navigation ? (
+              // Dynamic navigation based on frontmatter
+              navigation.sections.map((section) => (
+                <div key={section.title} className="mb-8">
+                  <h3 className="mb-3 text-sm font-semibold text-gray-900 uppercase tracking-wider">
+                    {section.title}
+                  </h3>
+                  <ul className="space-y-2">
+                    {section.pages.map((page) => {
+                      const href = `/docs/${version}/${page.slug}`;
+                      const isActive = pathname === href;
+                      
+                      return (
+                        <li key={page.slug}>
+                          <Link
+                            href={href}
+                            onClick={() => setSidebarOpen(false)}
+                            className={`block px-3 py-2 rounded-lg transition-colors group ${
+                              isActive
+                                ? 'bg-violet-50 border-l-2 border-violet-500'
+                                : 'hover:bg-gray-50 border-l-2 border-transparent hover:border-gray-200'
+                            }`}
+                          >
+                            <div className={`font-medium text-sm ${
+                              isActive ? 'text-violet-700' : 'text-gray-900 group-hover:text-gray-900'
                             }`}>
-                              {item.description}
+                              {page.title}
                             </div>
-                          )}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                            {page.description && (
+                              <div className={`text-xs mt-1 ${
+                                isActive ? 'text-violet-600' : 'text-gray-500 group-hover:text-gray-600'
+                              }`}>
+                                {page.description}
+                              </div>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              // Fallback for pages without version context
+              <div className="text-gray-500 text-sm">
+                <p>Select a documentation version to see the navigation.</p>
               </div>
-            ))}
+            )}
           </nav>
         </aside>
 

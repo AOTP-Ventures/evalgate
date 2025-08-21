@@ -36,7 +36,7 @@ baseline: { ref: "origin/main" }
       {/* Hero */}
       <div className="mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Quick Start Guide</h1>
-        <p className="text-xl text-gray-600">
+        <p className="text-xl text-gray-700">
           Get EvalGate running in your project in under 10 minutes. Zero infrastructure required.
         </p>
       </div>
@@ -61,7 +61,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Test EvalGate locally</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Before setting up CI, let&apos;s make sure EvalGate works with your project locally.
           </p>
           
@@ -88,7 +88,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Create test fixtures</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Create example inputs and expected outputs for your AI system.
           </p>
           
@@ -97,7 +97,7 @@ baseline: { ref: "origin/main" }
             className="mb-4"
           />
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Create <code>eval/fixtures/cx_001.json</code>:
           </p>
           
@@ -123,7 +123,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Generate outputs</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Create a script that reads your fixtures and generates outputs using your AI system.
           </p>
           
@@ -151,7 +151,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Configure EvalGate</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Update <code>.github/evalgate.yml</code> with your evaluation rules:
           </p>
           
@@ -170,7 +170,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Test locally</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Run EvalGate locally to make sure everything works:
           </p>
           
@@ -199,7 +199,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Establish baseline</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Commit your changes to main branch to establish the performance baseline. Future PRs will be compared against this.
           </p>
           
@@ -240,7 +240,7 @@ baseline: { ref: "origin/main" }
             <h2 className="text-2xl font-bold text-gray-900">Add GitHub Actions</h2>
           </div>
           
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-800 mb-4">
             Create <code>.github/workflows/evalgate.yml</code>:
           </p>
           
@@ -283,7 +283,7 @@ jobs:
       {/* Success section */}
       <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-8 mt-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">🎉 You&apos;re all set!</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-800">
           Create a PR and EvalGate will automatically evaluate your changes against the baseline, 
           posting a detailed summary comment with scores and any failures.
         </p>

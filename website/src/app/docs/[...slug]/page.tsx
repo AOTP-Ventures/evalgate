@@ -41,12 +41,12 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
         </nav>
 
         {/* Content */}
-        <article className="prose prose-gray max-w-none prose-violet">
+        <article className="prose prose-slate max-w-none prose-lg prose-headings:text-gray-900 prose-p:text-gray-800 prose-li:text-gray-800">
           <doc.component />
         </article>
 
         {/* Navigation */}
-        <PreviousNext currentSlug={slug} />
+        <PreviousNext currentSlug={slug} version="v0.3.0" />
       </div>
     </DocLayout>
   );

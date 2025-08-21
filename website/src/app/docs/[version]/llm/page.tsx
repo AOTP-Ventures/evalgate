@@ -1,36 +1,26 @@
 import fs from 'fs';
 import path from 'path';
 import { notFound } from 'next/navigation';
+import { getVersionMarkdownFiles } from '@/lib/navigation';
 
 interface MarkdownFile {
   filename: string;
   title: string;
   content: string;
+  order: number;
 }
 
-function extractTitle(content: string): string {
-  const lines = content.split('\n');
-  for (const line of lines) {
-    if (line.startsWith('# ')) {
-      return line.slice(2).trim();
-    }
-  }
-  return 'Untitled';
-}
-
-function getMarkdownFiles(docsDir: string): MarkdownFile[] {
+function getMarkdownFiles(version: string): MarkdownFile[] {
   try {
-    const files = fs.readdirSync(docsDir)
-      .filter(file => file.endsWith('.md') && file !== 'COMPLETE.md')
-      .sort();
+    // Use our frontmatter system to get properly ordered files
+    const frontmatterFiles = getVersionMarkdownFiles(version);
     
-    return files.map(filename => {
-      const filePath = path.join(docsDir, filename);
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const title = extractTitle(content);
-      
-      return { filename, title, content };
-    });
+    return frontmatterFiles.map(file => ({
+      filename: path.basename(file.filePath),
+      title: file.frontmatter.title,
+      content: file.content,
+      order: file.frontmatter.order
+    })).sort((a, b) => a.order - b.order); // Sort by frontmatter order
   } catch (error) {
     return [];
   }
@@ -97,7 +87,7 @@ export default async function LLMDocumentationPage({ params }: { params: Promise
     notFound();
   }
   
-  const markdownFiles = getMarkdownFiles(docsDir);
+  const markdownFiles = getMarkdownFiles(version);
   
   if (markdownFiles.length === 0) {
     return (

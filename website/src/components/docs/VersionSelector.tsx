@@ -17,12 +17,26 @@ export function VersionSelector({ currentVersion, className }: VersionSelectorPr
   const pathname = usePathname();
   
   // Auto-detect current version from URL
-  const detectedVersion = pathname.match(/\/docs\/(v\d+\.\d+\.\d+)/)?.[1] || 'v0.2.0';
+  const detectedVersion = pathname.match(/\/docs\/(v\d+\.\d+\.\d+)/)?.[1] || 'v0.3.0';
   const activeVersion = currentVersion || detectedVersion;
 
   useEffect(() => {
-    // For now, we'll hardcode the versions. In a real app, you'd fetch this from an API
-    setVersions(['v0.2.0']);
+    // Get available versions from API
+    const fetchVersions = async () => {
+      try {
+        const response = await fetch('/api/docs/versions');
+        if (response.ok) {
+          const data = await response.json();
+          setVersions(data.versions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch versions:', error);
+        // Fallback to hardcoded versions
+        setVersions(['v0.3.0', 'v0.2.0']);
+      }
+    };
+    
+    fetchVersions();
   }, []);
 
   const handleVersionChange = (version: string) => {
