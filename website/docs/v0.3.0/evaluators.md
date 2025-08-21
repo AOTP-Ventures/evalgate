@@ -367,6 +367,8 @@ fixture's `expected` object appear in the model output.
 ### Latency/Cost Evaluator
 Performance budget enforcement.
 
+**Note:** Each fixture's `meta` section must include `latency_ms` and `cost_usd` values for this evaluator to work.
+
 **Configuration:**
 ```yaml
 - name: performance
