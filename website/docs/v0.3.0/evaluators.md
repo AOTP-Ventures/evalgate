@@ -309,6 +309,18 @@ Multi-turn dialogue validation.
 ### Tool Usage Evaluator
 Agent function call and tool validation.
 
+Model outputs should include a `tool_calls` list that logs each tool invocation in order. Each entry records the tool `name` and its input `args`.
+
+```json
+{
+  "output": "...",
+  "tool_calls": [
+    {"name": "search_flights", "args": {"from": "NYC", "to": "LAX"}},
+    {"name": "book_flight", "args": {"flight_id": "AA123"}}
+  ]
+}
+```
+
 **Configuration:**
 ```yaml
 - name: agent_tools
