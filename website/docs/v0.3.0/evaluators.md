@@ -277,6 +277,11 @@ Use them when working with non-default endpoints, streaming transcripts, or mult
 ### Embedding Similarity Evaluator
 Semantic similarity using sentence transformers.
 
+> **Note:** Requires the `sentence-transformers` and `numpy` packages. Install them with:
+> ```bash
+> pip install sentence-transformers numpy
+> ```
+
 **Configuration:**
 ```yaml
 - name: semantic_similarity
