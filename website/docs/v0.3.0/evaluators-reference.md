@@ -43,7 +43,6 @@ Complete reference for all evaluator types available in EvalGate v0.3.0. Each ev
   type: schema
   schema_path: "eval/schemas/output.json"
   weight: 0.2
-  strict_mode: true          # Optional: strict validation (default: false)
 ```
 
 ### Schema Example
@@ -102,7 +101,6 @@ Schema validation failed: 0.95 is not of type 'string'
   type: category
   expected_field: "sentiment"
   weight: 0.3
-  case_sensitive: false      # Optional: case sensitivity (default: true)
 ```
 
 ### Example Data
@@ -146,11 +144,10 @@ Schema validation failed: 0.95 is not of type 'string'
 ```yaml
 - name: field_completeness
   type: required_fields
-  required: ["id", "timestamp", "result", "confidence"]
   weight: 0.1
-  allow_null: false          # Optional: allow null values (default: false)
-  allow_empty: false         # Optional: allow empty strings/arrays (default: false)
 ```
+
+Required keys come from each fixture's `expected` block.
 
 ### Example
 
@@ -191,11 +188,13 @@ Schema validation failed: 0.95 is not of type 'string'
 ```yaml
 - name: phone_validation
   type: regex
-  expected_field: "phone_number"
-  pattern: "^\\+?1?-?\\(?\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{4}$"
+  pattern_field: "phone_pattern"   # Read pattern from each fixture's expected block
+  pattern_path: "eval/patterns.json"  # Or load patterns from file
   weight: 0.2
-  flags: ["IGNORECASE"]      # Optional: regex flags
 ```
+
+`pattern_field` looks for a pattern in each fixture's `expected` block. `pattern_path`
+should point to a JSON file mapping fixture names to regex strings.
 
 ### Pattern Examples
 
@@ -244,24 +243,14 @@ Schema validation failed: 0.95 is not of type 'string'
 - name: performance_budgets
   type: budgets
   weight: 0.1
-  fail_on_budget_exceeded: true    # Optional: fail gate on violation
 ```
 
 ### Budget Configuration
 
 ```yaml
 budgets:
-  # Latency budgets (milliseconds)
-  p95_latency_ms: 1000
-  p50_latency_ms: 500
-  max_latency_ms: 2000
-  
-  # Cost budgets (USD)
-  max_cost_usd_per_item: 0.02
-  total_cost_budget_usd: 10.0
-  
-  # Memory budgets (MB)
-  max_memory_mb: 512
+  p95_latency_ms: 1000        # Max 95th percentile latency
+  max_cost_usd_per_item: 0.02 # Max average cost per item
 ```
 
 ### Example Output
@@ -272,8 +261,7 @@ budgets:
   "result": "processed",
   "meta": {
     "latency_ms": 850,
-    "cost_usd": 0.015,
-    "memory_mb": 256
+    "cost_usd": 0.015
   }
 }
 ```
@@ -305,7 +293,6 @@ budgets:
   expected_field: "category"
   multi_label: false         # Set true for multi-label classification
   weight: 0.4
-  average: "weighted"        # Optional: macro, micro, weighted (default: weighted)
 ```
 
 ### Single-Label Example
@@ -379,10 +366,12 @@ multi_label: true
   model: gpt-4
   prompt_path: eval/prompts/quality_judge.txt
   api_key_env_var: OPENAI_API_KEY
+  base_url: null             # Optional: custom API base URL
   temperature: 0.1           # Optional: control randomness
   max_tokens: 200            # Optional: response length
-  timeout_seconds: 30        # Optional: request timeout
   min_score: 0.75           # Optional: minimum passing score
+  transcript_field: null     # Optional: field containing conversation transcript
+  per_turn_scoring: false    # Optional: score each turn
   weight: 0.4
 ```
 
@@ -442,7 +431,6 @@ uvx --from evalgate[embedding] evalgate
   model: "sentence-transformers/all-MiniLM-L6-v2"
   threshold: 0.8             # Optional: similarity threshold
   weight: 0.3
-  normalize: true            # Optional: normalize embeddings
 ```
 
 ### Model Options
@@ -510,7 +498,6 @@ uvx --from evalgate[nlp] evalgate
   expected_field: "generated_text"
   metric: "bleu"             # bleu, rouge1, rouge2, rougeL
   weight: 0.3
-  use_stemmer: true          # Optional: for ROUGE metrics
 ```
 
 ### Metric Options
@@ -575,7 +562,6 @@ uvx --from evalgate[nlp] evalgate
   expected_final_field: "content"
   max_turns: 10              # Optional: maximum conversation length
   weight: 0.3
-  validate_roles: true       # Optional: validate message roles
 ```
 
 ### Conversation Format
@@ -613,7 +599,6 @@ uvx --from evalgate[nlp] evalgate
 ### Scoring
 - **Final message match:** Compares last message content
 - **Turn limit:** Penalizes excessive turns
-- **Role validation:** Ensures proper message roles
 
 ---
 
@@ -629,32 +614,23 @@ uvx --from evalgate[nlp] evalgate
 ```yaml
 - name: agent_tool_validation
   type: tool_usage
-  expected_tool_calls: true  # Optional: expect tool calls
-  validate_args: true        # Optional: validate call arguments
-  strict_order: false        # Optional: require exact call order
+  expected_tool_calls:
+    flight_booking:
+      - name: search_flights
+        args: {from: "NYC", to: "LAX", date: "2024-01-26"}
+      - name: book_flight
+        args: {flight_id: "AA123"}
   weight: 0.4
 ```
 
-### Tool Call Format
+`expected_tool_calls` maps fixture names to their expected tool call sequences.
 
-**Fixture:**
+### Example
+
+**Fixture `flight_booking.json`:**
 ```json
 {
-  "input": {
-    "user_request": "Book a flight from NYC to LAX"
-  },
-  "expected": {
-    "tool_calls": [
-      {
-        "name": "search_flights",
-        "args": {"from": "NYC", "to": "LAX", "date": "2024-01-26"}
-      },
-      {
-        "name": "book_flight", 
-        "args": {"flight_id": "AA123"}
-      }
-    ]
-  }
+  "input": {"user_request": "Book a flight from NYC to LAX"}
 }
 ```
 
@@ -662,16 +638,9 @@ uvx --from evalgate[nlp] evalgate
 ```json
 {
   "tool_calls": [
-    {
-      "name": "search_flights",
-      "args": {"from": "NYC", "to": "LAX", "date": "2024-01-26"}
-    },
-    {
-      "name": "book_flight",
-      "args": {"flight_id": "AA123"}
-    }
-  ],
-  "final_response": "I've booked your flight AA123."
+    {"name": "search_flights", "args": {"from": "NYC", "to": "LAX", "date": "2024-01-26"}},
+    {"name": "book_flight", "args": {"flight_id": "AA123"}}
+  ]
 }
 ```
 
@@ -682,9 +651,7 @@ uvx --from evalgate[nlp] evalgate
 - ✅ Workflow automation
 
 ### Scoring
-- **Tool call accuracy:** Correct function names
-- **Argument validation:** Proper parameters
-- **Sequence validation:** Optional order checking
+- **Tool call accuracy:** Correct function names and arguments in order
 
 ---
 
@@ -702,7 +669,6 @@ uvx --from evalgate[nlp] evalgate
   type: workflow
   workflow_path: "eval/workflows/process.yaml"
   weight: 0.3
-  allow_extra_steps: false   # Optional: allow additional steps
 ```
 
 ### Workflow Definition
