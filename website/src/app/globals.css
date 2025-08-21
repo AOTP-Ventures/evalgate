@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
@@ -291,4 +292,40 @@ body {
   border-radius: 0.25rem;
   opacity: 0.9;
   pointer-events: none;
+}
+
+/* Styles for inline TOC created by rehype-toc */
+.inline-toc-container {
+  /* Most styling handled by Tailwind classes, add refinements */
+}
+
+/* Add TOC header */
+.inline-toc-container::before {
+  content: "📋 Table of Contents";
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #d1d5db;
+}
+
+/* TOC link styling for better UX */
+.inline-toc-container .toc-link {
+  position: relative;
+}
+
+.inline-toc-container .toc-link:hover {
+  transform: translateX(2px);
+}
+
+/* Nested TOC items indentation */
+.inline-toc-container .toc-list .toc-list {
+  padding-left: 1rem;
+  margin-top: 0.5rem;
+}
+
+.inline-toc-container .toc-list .toc-list .toc-list {
+  padding-left: 2rem;
 }
