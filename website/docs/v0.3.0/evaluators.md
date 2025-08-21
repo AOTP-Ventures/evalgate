@@ -94,7 +94,12 @@ evaluators:
   # Function call validation
   - name: tool_usage
     type: tool_usage
-    expected_tool_calls: true
+    expected_tool_calls:
+      booking_example:
+        - name: search_flights
+          args: {from: "NYC", to: "LAX"}
+        - name: book_flight
+          args: {flight_id: "AA123"}
     weight: 0.4
     
   # Workflow validation
@@ -130,10 +135,9 @@ evaluators:
     prompt_path: eval/prompts/conversation_judge.txt
     weight: 0.4
     
-  # Required conversation elements
+  # Required conversation elements (specified in each fixture's expected block)
   - name: conversation_fields
     type: required_fields
-    required: ["role", "content"]
     weight: 0.3
 ```
 
@@ -309,7 +313,12 @@ Agent function call and tool validation.
 ```yaml
 - name: agent_tools
   type: tool_usage
-  expected_tool_calls: true
+  expected_tool_calls:
+    booking_example:
+      - name: search_flights
+        args: {from: "NYC", to: "LAX"}
+      - name: book_flight
+        args: {flight_id: "AA123"}
   weight: 0.4
 ```
 
@@ -343,13 +352,13 @@ Pattern-based text validation.
 **Use Cases:** Format validation, structured text, data extraction
 
 ### Required Fields Evaluator
-Field presence validation.
+Field presence validation. This evaluator checks that any keys listed under each
+fixture's `expected` object appear in the model output.
 
 **Configuration:**
 ```yaml
 - name: field_check
   type: required_fields
-  required: ["id", "timestamp", "result"]
   weight: 0.1
 ```
 
@@ -383,7 +392,7 @@ Combine multiple evaluator types for comprehensive validation:
 evaluators:
   # Layer 1: Basic validation (fast, fails early)
   - { name: structure, type: schema, schema_path: "eval/schemas/output.json", weight: 0.1 }
-  - { name: required, type: required_fields, required: ["result"], weight: 0.1 }
+  - { name: required, type: required_fields, weight: 0.1 }
   
   # Layer 2: Functional validation 
   - { name: accuracy, type: category, expected_field: "sentiment", weight: 0.3 }
