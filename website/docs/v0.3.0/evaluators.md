@@ -346,6 +346,29 @@ State machine and workflow process validation.
   weight: 0.3
 ```
 
+**Edges Definition Example:**
+Edges define valid transitions between workflow states.
+
+```yaml
+edges:
+  - from: start
+    to: gather_info
+  - from: gather_info
+    to: review
+  - from: review
+    to: end
+```
+
+```json
+{
+  "edges": [
+    {"from": "start", "to": "gather_info"},
+    {"from": "gather_info", "to": "review"},
+    {"from": "review", "to": "end"}
+  ]
+}
+```
+
 **Use Cases:** Complex workflows, state machines, process validation
 
 ### Regex Match Evaluator
