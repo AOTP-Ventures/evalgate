@@ -636,10 +636,10 @@ EVALGATE_LOG_LEVEL=DEBUG evalgate run --config .github/evalgate.yml
 
 ## Next Steps
 
-- **[GitHub Integration](07-github-integration.md)** - Advanced CI/CD patterns
-- **[Baseline Management](08-baseline-management.md)** - Progressive quality improvement
-- **[Examples](10-examples.md)** - Real-world LLM judge implementations
-- **[Best Practices](11-best-practices.md)** - Production deployment strategies
+- **[GitHub Integration](github-integration.md)** - Advanced CI/CD patterns
+- **[Baseline Management](baseline-management.md)** - Progressive quality improvement
+- **[Examples](examples.md)** - Real-world LLM judge implementations
+- **[Best Practices](best-practices.md)** - Production deployment strategies
 
 ---
 

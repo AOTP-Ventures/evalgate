@@ -403,7 +403,7 @@ Score: [your score]
 - **Caching:** Automatic response caching
 - **Retries:** Configurable retry logic
 
-**See [LLM as Judge Guide](06-llm-as-judge.md) for detailed documentation.**
+**See [LLM as Judge Guide](llm-as-judge.md) for detailed documentation.**
 
 ---
 
@@ -823,10 +823,10 @@ evaluators:
 
 ## Next Steps
 
-- **[Examples](10-examples.md)** - Real-world evaluator combinations
-- **[Best Practices](11-best-practices.md)** - Production deployment strategies  
-- **[CLI Reference](12-cli-reference.md)** - Command-line usage
-- **[Troubleshooting](13-troubleshooting.md)** - Debug common issues
+- **[Examples](examples.md)** - Real-world evaluator combinations
+- **[Best Practices](best-practices.md)** - Production deployment strategies
+- **[CLI Reference](cli-reference.md)** - Command-line usage
+- **[Troubleshooting](troubleshooting.md)** - Debug common issues
 
 ---
 

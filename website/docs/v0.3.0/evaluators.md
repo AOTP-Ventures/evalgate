@@ -455,10 +455,10 @@ Tailor evaluator combinations to your specific use case:
 
 ## Next Steps
 
-- **[Configuration Reference](04-configuration.md)** - Complete configuration options
-- **[Evaluators Reference](09-evaluators-reference.md)** - Detailed specifications for each type
-- **[Examples](10-examples.md)** - Real-world evaluator combinations
-- **[Best Practices](11-best-practices.md)** - Production deployment patterns
+- **[Configuration Reference](configuration.md)** - Complete configuration options
+- **[Evaluators Reference](evaluators-reference.md)** - Detailed specifications for each type
+- **[Examples](examples.md)** - Real-world evaluator combinations
+- **[Best Practices](best-practices.md)** - Production deployment patterns
 
 ---
 
