@@ -256,12 +256,23 @@ AI-powered quality assessment using language models.
   model: gpt-4
   prompt_path: eval/prompts/quality.txt
   api_key_env_var: OPENAI_API_KEY
+  base_url: https://custom-endpoint.example.com/v1  # Optional: custom endpoint
+  max_tokens: 200                                   # Optional: limit response length
+  transcript_field: messages                        # Optional: evaluate streamed transcripts
+  per_turn_scoring: true                            # Optional: score each turn separately
   temperature: 0.1
   min_score: 0.75
   weight: 0.5
 ```
 
 **Use Cases:** Content quality, appropriateness, complex criteria, subjective evaluation
+
+Optional fields help adapt the evaluator to specific scenarios:
+- `base_url` points to a custom endpoint such as Azure or a local model.
+- `max_tokens` caps the judge's response length.
+- `transcript_field` references a field containing streamed transcripts.
+- `per_turn_scoring` enables scoring each conversation turn individually.
+Use them when working with non-default endpoints, streaming transcripts, or multi-turn evaluations.
 
 ### Embedding Similarity Evaluator
 Semantic similarity using sentence transformers.
