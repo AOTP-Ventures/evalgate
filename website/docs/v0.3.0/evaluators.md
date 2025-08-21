@@ -552,13 +552,6 @@ Tailor evaluator combinations to your specific use case:
 - Use detailed error messages to identify improvement areas
 - Regularly review and update evaluation criteria
 
-## Next Steps
-
-- **[Configuration Reference](configuration.md)** - Complete configuration options
-- **[Evaluators Reference](evaluators-reference.md)** - Detailed specifications for each type
-- **[Examples](examples.md)** - Real-world evaluator combinations
-- **[Best Practices](best-practices.md)** - Production deployment patterns
-
 ---
 
 *EvalGate's evaluator system provides the flexibility to validate any aspect of AI behavior while maintaining the simplicity needed for practical adoption.*

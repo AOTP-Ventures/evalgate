@@ -3,7 +3,7 @@ title: "Evaluators Reference"
 section: "Reference"
 slug: "evaluators-reference"
 order: 9
-description: "Complete reference guide for all evaluator types in EvalGate v0.3.0 with configuration options and examples."
+description: "Guide to all evaluator types iwith configuration options and examples"
 ---
 
 # Evaluators Reference
@@ -403,7 +403,7 @@ Score: [your score]
 - **Caching:** Automatic response caching
 - **Retries:** Configurable retry logic
 
-**See [LLM as Judge Guide](llm-as-judge.md) for detailed documentation.**
+**See [LLM as Judge Guide](llm-as-judge) for detailed documentation.**
 
 ---
 
@@ -820,13 +820,6 @@ evaluators:
   - name: other_evaluator
     enabled: false
 ```
-
-## Next Steps
-
-- **[Examples](examples.md)** - Real-world evaluator combinations
-- **[Best Practices](best-practices.md)** - Production deployment strategies
-- **[CLI Reference](cli-reference.md)** - Command-line usage
-- **[Troubleshooting](troubleshooting.md)** - Debug common issues
 
 ---
 
