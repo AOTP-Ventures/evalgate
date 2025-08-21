@@ -589,10 +589,10 @@ python scripts/enhance_fixtures.py \
 
 ## Next Steps
 
-- **[LLM as Judge](06-llm-as-judge.md)** - AI-powered evaluation setup
-- **[Examples](10-examples.md)** - Real-world fixture examples
-- **[CLI Reference](12-cli-reference.md)** - Complete fixture generation commands
-- **[Best Practices](11-best-practices.md)** - Production fixture strategies
+- **[LLM as Judge](llm-as-judge.md)** - AI-powered evaluation setup
+- **[Examples](examples.md)** - Real-world fixture examples
+- **[CLI Reference](cli-reference.md)** - Complete fixture generation commands
+- **[Best Practices](best-practices.md)** - Production fixture strategies
 
 ---
 
