@@ -12,6 +12,14 @@ Get EvalGate v0.3.0 running in your project in under 10 minutes. Zero infrastruc
 
 This guide assumes you have a GitHub repository and can run Python scripts.
 
+## Quick Run
+
+```bash
+evalgate init
+python scripts/predict.py --in eval/fixtures --out .evalgate/outputs
+evalgate run --config .github/evalgate.yml
+```
+
 ## What You'll Build
 
 By the end of this guide, you'll have:
