@@ -45,7 +45,7 @@ const processor = unified()
   .use(rehypeRaw) // Allow raw HTML
   .use(rehypeSlug) // Add IDs to headings
   .use(rehypeToc, {
-    headings: ['h2', 'h3', 'h4'], // Which headings to include in TOC
+    headings: ['h2', 'h3'], // Which headings to include in TOC
     cssClasses: {
       toc: 'inline-toc-container bg-gray-50 border border-gray-200 rounded-lg p-4 mb-8',
       list: 'toc-list space-y-2 text-sm',

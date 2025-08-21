@@ -3,7 +3,7 @@ title: "Evaluators Reference"
 section: "Reference"
 slug: "evaluators-reference"
 order: 9
-description: "Guide to all evaluator types iwith configuration options and examples"
+description: "Guide to all evaluator types with configuration options and examples"
 ---
 
 # Evaluators Reference
@@ -29,14 +29,16 @@ Complete reference for all evaluator types available in EvalGate v0.3.0. Each ev
 
 ---
 
-## JSON Schema Evaluator
+## Evaluators
+
+### JSON Schema Evaluator
 
 **Type:** `schema`  
 **Purpose:** Validate output structure and data types against JSON Schema  
 **Speed:** ⚡ Very Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: json_validation
@@ -45,7 +47,7 @@ Complete reference for all evaluator types available in EvalGate v0.3.0. Each ev
   weight: 0.2
 ```
 
-### Schema Example
+#### Schema Example
 
 ```json
 {
@@ -73,13 +75,13 @@ Complete reference for all evaluator types available in EvalGate v0.3.0. Each ev
 }
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ API response validation
 - ✅ Data format enforcement
 - ✅ Type safety verification
 - ✅ Required field validation
 
-### Common Errors
+#### Common Errors
 ```
 Schema validation failed: 'sentiment' is a required property
 Schema validation failed: 0.95 is not of type 'string'
@@ -87,14 +89,14 @@ Schema validation failed: 0.95 is not of type 'string'
 
 ---
 
-## Category Match Evaluator
+### Category Match Evaluator
 
 **Type:** `category`  
 **Purpose:** Exact matching for categorical/classification outputs  
 **Speed:** ⚡ Very Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: sentiment_accuracy
@@ -103,7 +105,7 @@ Schema validation failed: 0.95 is not of type 'string'
   weight: 0.3
 ```
 
-### Example Data
+#### Example Data
 
 **Fixture:**
 ```json
@@ -120,26 +122,26 @@ Schema validation failed: 0.95 is not of type 'string'
 
 **Result:** ✅ Pass (exact match)
 
-### Use Cases
+#### Use Cases
 - ✅ Classification accuracy
 - ✅ Label validation
 - ✅ Binary decisions (yes/no, true/false)
 - ✅ Status validation
 
-### Scoring
+#### Scoring
 - **1.0:** Exact match
 - **0.0:** No match
 
 ---
 
-## Required Fields Evaluator
+### Required Fields Evaluator
 
 **Type:** `required_fields`  
 **Purpose:** Verify presence of required output fields  
 **Speed:** ⚡ Very Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: field_completeness
@@ -149,7 +151,7 @@ Schema validation failed: 0.95 is not of type 'string'
 
 Required keys come from each fixture's `expected` block.
 
-### Example
+#### Example
 
 **Output with all required fields:**
 ```json
@@ -164,26 +166,26 @@ Required keys come from each fixture's `expected` block.
 
 **Result:** ✅ Pass (all required fields present)
 
-### Use Cases
+#### Use Cases
 - ✅ Data completeness validation
 - ✅ API contract enforcement  
 - ✅ Critical field verification
 - ✅ Output format validation
 
-### Scoring
+#### Scoring
 - **Score = (present_fields / required_fields)**
 - Example: 3/4 required fields present = 0.75
 
 ---
 
-## Regex Match Evaluator
+### Regex Match Evaluator
 
 **Type:** `regex`  
 **Purpose:** Pattern-based validation using regular expressions  
 **Speed:** ⚡ Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: phone_validation
@@ -196,7 +198,7 @@ Required keys come from each fixture's `expected` block.
 `pattern_field` looks for a pattern in each fixture's `expected` block. `pattern_path`
 should point to a JSON file mapping fixture names to regex strings.
 
-### Pattern Examples
+#### Pattern Examples
 
 **Phone Numbers:**
 ```regex
@@ -218,26 +220,26 @@ should point to a JSON file mapping fixture names to regex strings.
 ^\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}$
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ Format validation
 - ✅ Data extraction verification  
 - ✅ Structured text validation
 - ✅ Compliance checking
 
-### Scoring
+#### Scoring
 - **1.0:** Pattern matches
 - **0.0:** Pattern doesn't match
 
 ---
 
-## Latency/Cost Evaluator
+### Latency/Cost Evaluator
 
 **Type:** `budgets`  
 **Purpose:** Enforce performance and cost budgets  
 **Speed:** ⚡ Very Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: performance_budgets
@@ -245,7 +247,7 @@ should point to a JSON file mapping fixture names to regex strings.
   weight: 0.1
 ```
 
-### Budget Configuration
+#### Budget Configuration
 
 ```yaml
 budgets:
@@ -253,7 +255,7 @@ budgets:
   max_cost_usd_per_item: 0.02 # Max average cost per item
 ```
 
-### Example Output
+#### Example Output
 
 **Output with performance metadata:**
 ```json
@@ -266,26 +268,26 @@ budgets:
 }
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ SLA enforcement
 - ✅ Cost control
 - ✅ Performance monitoring
 - ✅ Resource optimization
 
-### Scoring
+#### Scoring
 - **Budget met:** 1.0
 - **Budget exceeded:** 0.0 (with failure details)
 
 ---
 
-## Classification Evaluator
+### Classification Evaluator
 
 **Type:** `classification`  
 **Purpose:** Comprehensive ML metrics for classification tasks  
 **Speed:** ⚡ Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: ml_metrics
@@ -295,7 +297,7 @@ budgets:
   weight: 0.4
 ```
 
-### Single-Label Example
+#### Single-Label Example
 
 **Fixtures and Outputs:**
 ```json
@@ -325,7 +327,7 @@ budgets:
 }
 ```
 
-### Multi-Label Example
+#### Multi-Label Example
 
 ```yaml
 multi_label: true
@@ -338,26 +340,26 @@ multi_label: true
 {"categories": ["tech", "business"]}  // Partial match
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ ML model evaluation
 - ✅ Classification accuracy
 - ✅ Multi-class problems
 - ✅ Performance analysis
 
-### Scoring
+#### Scoring
 - **Score:** F1-score (0.0 to 1.0)
 - **Metrics:** Precision, recall, F1, confusion matrix
 
 ---
 
-## LLM as Judge Evaluator
+### LLM as Judge Evaluator
 
 **Type:** `llm`  
 **Purpose:** AI-powered quality assessment using language models  
 **Speed:** 🐌 Slow (API calls)  
 **Dependencies:** OpenAI/Anthropic API keys
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: content_quality
@@ -375,7 +377,7 @@ multi_label: true
   weight: 0.4
 ```
 
-### Prompt Template
+#### Prompt Template
 
 ```
 You are evaluating customer service responses for quality.
@@ -392,13 +394,13 @@ Rate the OUTPUT from 0.0 to 1.0 on:
 Score: [your score]
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ Content quality assessment
 - ✅ Tone and appropriateness
 - ✅ Complex subjective criteria
 - ✅ Domain expertise validation
 
-### Scoring
+#### Scoring
 - **Score:** Parsed from LLM response (0.0 to 1.0)
 - **Caching:** Automatic response caching
 - **Retries:** Configurable retry logic
@@ -407,14 +409,14 @@ Score: [your score]
 
 ---
 
-## Embedding Similarity Evaluator
+### Embedding Similarity Evaluator
 
 **Type:** `embedding`  
 **Purpose:** Semantic similarity using sentence transformers  
 **Speed:** 🐌 Slow (model inference)  
 **Dependencies:** `sentence-transformers`, `numpy`
 
-### Installation
+#### Installation
 
 ```bash
 pip install sentence-transformers numpy
@@ -422,7 +424,7 @@ pip install sentence-transformers numpy
 uvx --from evalgate[embedding] evalgate
 ```
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: semantic_similarity
@@ -433,7 +435,7 @@ uvx --from evalgate[embedding] evalgate
   weight: 0.3
 ```
 
-### Model Options
+#### Model Options
 
 **Fast Models:**
 - `all-MiniLM-L6-v2` - Good balance of speed/quality
@@ -443,7 +445,7 @@ uvx --from evalgate[embedding] evalgate
 - `all-mpnet-base-v2` - Best overall quality
 - `all-roberta-large-v1` - High-quality, larger
 
-### Example
+#### Example
 
 **Fixture:**
 ```json
@@ -463,26 +465,26 @@ uvx --from evalgate[embedding] evalgate
 
 **Similarity Score:** 0.87 (high semantic similarity)
 
-### Use Cases
+#### Use Cases
 - ✅ Semantic correctness
 - ✅ Paraphrasing validation
 - ✅ Content similarity
 - ✅ Translation quality
 
-### Scoring
+#### Scoring
 - **Score:** Cosine similarity (0.0 to 1.0)
 - **Threshold:** Optional minimum similarity
 
 ---
 
-## ROUGE/BLEU Evaluator
+### ROUGE/BLEU Evaluator
 
 **Type:** `rouge_bleu`  
 **Purpose:** Standard text generation quality metrics  
 **Speed:** 🟡 Medium  
 **Dependencies:** `sacrebleu`, `rouge-score`
 
-### Installation
+#### Installation
 
 ```bash
 pip install sacrebleu rouge-score
@@ -490,7 +492,7 @@ pip install sacrebleu rouge-score
 uvx --from evalgate[nlp] evalgate
 ```
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: text_quality
@@ -500,7 +502,7 @@ uvx --from evalgate[nlp] evalgate
   weight: 0.3
 ```
 
-### Metric Options
+#### Metric Options
 
 **BLEU (Bilingual Evaluation Understudy):**
 - Good for translation and generation
@@ -519,7 +521,7 @@ uvx --from evalgate[nlp] evalgate
 - Longest common subsequence
 - Good for order preservation
 
-### Example
+#### Example
 
 **Fixture:**
 ```json
@@ -539,7 +541,7 @@ uvx --from evalgate[nlp] evalgate
 
 **BLEU Score:** 0.45 (moderate overlap)
 
-### Use Cases
+#### Use Cases
 - ✅ Text generation quality
 - ✅ Summarization evaluation
 - ✅ Translation quality
@@ -547,14 +549,14 @@ uvx --from evalgate[nlp] evalgate
 
 ---
 
-## Conversation Flow Evaluator
+### Conversation Flow Evaluator
 
 **Type:** `conversation`  
 **Purpose:** Multi-turn dialogue validation  
 **Speed:** ⚡ Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: dialogue_validation
@@ -564,7 +566,7 @@ uvx --from evalgate[nlp] evalgate
   weight: 0.3
 ```
 
-### Conversation Format
+#### Conversation Format
 
 **Fixture:**
 ```json
@@ -590,26 +592,26 @@ uvx --from evalgate[nlp] evalgate
 }
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ Chatbot validation
 - ✅ Dialogue systems
 - ✅ Conversation AI
 - ✅ Multi-turn interactions
 
-### Scoring
+#### Scoring
 - **Final message match:** Compares last message content
 - **Turn limit:** Penalizes excessive turns
 
 ---
 
-## Tool Usage Evaluator
+### Tool Usage Evaluator
 
 **Type:** `tool_usage`  
 **Purpose:** Validate AI agent function calls and tool usage  
 **Speed:** ⚡ Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: agent_tool_validation
@@ -625,7 +627,7 @@ uvx --from evalgate[nlp] evalgate
 
 `expected_tool_calls` maps fixture names to their expected tool call sequences.
 
-### Example
+#### Example
 
 **Fixture `flight_booking.json`:**
 ```json
@@ -644,25 +646,25 @@ uvx --from evalgate[nlp] evalgate
 }
 ```
 
-### Use Cases
+#### Use Cases
 - ✅ AI agent validation
 - ✅ Function calling systems
 - ✅ Tool-using AI
 - ✅ Workflow automation
 
-### Scoring
+#### Scoring
 - **Tool call accuracy:** Correct function names and arguments in order
 
 ---
 
-## Workflow DAG Evaluator
+### Workflow DAG Evaluator
 
 **Type:** `workflow`  
 **Purpose:** Validate state machine and workflow execution  
 **Speed:** ⚡ Fast  
 **Dependencies:** None
 
-### Configuration
+#### Configuration
 
 ```yaml
 - name: workflow_validation
@@ -671,7 +673,7 @@ uvx --from evalgate[nlp] evalgate
   weight: 0.3
 ```
 
-### Workflow Definition
+#### Workflow Definition
 
 **File: `eval/workflows/process.yaml`**
 ```yaml
@@ -685,7 +687,7 @@ edges:
   reject_input: [end]
 ```
 
-### Example Usage
+#### Example Usage
 
 **Output:**
 ```json
@@ -699,13 +701,13 @@ edges:
 - ✅ No invalid state transitions
 - ✅ Workflow follows defined paths
 
-### Use Cases
+#### Use Cases
 - ✅ State machine validation
 - ✅ Process flow verification
 - ✅ Workflow compliance
 - ✅ Business logic validation
 
-### Scoring
+#### Scoring
 - **Valid workflow:** 1.0
 - **Invalid transitions:** 0.0 (with detailed errors)
 
@@ -713,7 +715,7 @@ edges:
 
 ## Evaluator Selection Guide
 
-### By Use Case
+#### By Use Case
 
 **Classification Tasks:**
 - Primary: `classification` (ML metrics)
@@ -741,7 +743,7 @@ edges:
 - Format: `regex` (structured outputs)
 - Completeness: `required_fields` (data presence)
 
-### By Speed Requirements
+#### By Speed Requirements
 
 **Fast Feedback (< 1s per evaluation):**
 - `schema`, `category`, `required_fields`, `regex`, `budgets`, `conversation`, `tool_usage`, `workflow`
@@ -752,7 +754,7 @@ edges:
 **Slow but Comprehensive (10s+ per evaluation):**
 - `llm`, `embedding`
 
-### By Complexity
+#### By Complexity
 
 **Simple Setup:**
 - `schema`, `category`, `required_fields`, `budgets`
@@ -767,7 +769,7 @@ edges:
 
 ## Best Practices
 
-### 🎯 **Evaluator Combinations**
+#### 🎯 **Evaluator Combinations**
 
 **Layered Approach:**
 ```yaml
@@ -786,7 +788,7 @@ evaluators:
   - {name: performance, type: budgets, weight: 0.1}
 ```
 
-### ⚡ **Performance Optimization**
+#### ⚡ **Performance Optimization**
 
 **Fail Fast:**
 ```yaml
@@ -803,7 +805,7 @@ evaluators:
   fixture_filter: "meta.priority == 'high'"
 ```
 
-### 🔧 **Debugging Tips**
+#### 🔧 **Debugging Tips**
 
 **Verbose Output:**
 ```bash
