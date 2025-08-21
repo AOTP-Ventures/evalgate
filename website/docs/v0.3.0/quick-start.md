@@ -143,69 +143,42 @@ evalgate generate-fixtures \
 
 ## Step 3: Create Your Prediction Script
 
-Create a script that generates outputs for your fixtures. Here's a template:
+Fixtures in `eval/fixtures/` are JSON files that include an `input` object used for inference and an optional `expected` object used by evaluators. A prediction script reads each fixture, sends the `input` to your model, then writes a JSON file with the model's output to `.evalgate/outputs/` using the same filename.
+
+Here's a minimal template:
 
 ```python
 # scripts/predict.py
-import json
-import sys
-from pathlib import Path
 import argparse
+import json
+from pathlib import Path
 
-def predict_single(fixture_data):
-    """
-    Replace this with your actual AI model/system.
-    This example shows the expected output format.
-    """
-    input_data = fixture_data.get('input', {})
-    
-    # Your AI system call here
-    # result = your_model.predict(input_data)
-    
-    # Example output - replace with your actual prediction
-    output = {
-        "sentiment": "positive",  # Your model's prediction
-        "confidence": 0.87,
-        "categories": ["product_quality"],
-        # For conversation:
-        # "messages": [...],
-        # For tool use:
-        # "tool_calls": [...],
-    }
-    
-    # Optional: Add performance metadata
-    output["meta"] = {
-        "latency_ms": 120,
-        "cost_usd": 0.003
-    }
-    
-    return output
 
-def main():
+def run_model(data: dict) -> dict:
+    """Replace this function with your model's inference logic."""
+    return {"sentiment": "positive"}
+
+
+def main(input_dir: str, output_dir: str) -> None:
+    inputs = Path(input_dir)
+    outputs = Path(output_dir)
+    outputs.mkdir(parents=True, exist_ok=True)
+
+    for fixture_path in inputs.glob("*.json"):
+        fixture = json.loads(fixture_path.read_text())
+        result = run_model(fixture.get("input", {}))
+        (outputs / fixture_path.name).write_text(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--in', dest='input_dir', required=True)
-    parser.add_argument('--out', dest='output_dir', required=True)
+    parser.add_argument("--in", dest="input_dir", required=True)
+    parser.add_argument("--out", dest="output_dir", required=True)
     args = parser.parse_args()
-    
-    input_path = Path(args.input_dir)
-    output_path = Path(args.output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    for fixture_file in input_path.glob('*.json'):
-        with open(fixture_file) as f:
-            fixture_data = json.load(f)
-        
-        prediction = predict_single(fixture_data)
-        
-        output_file = output_path / fixture_file.name
-        with open(output_file, 'w') as f:
-            json.dump(prediction, f, indent=2)
-    
-    print(f"Generated predictions for {len(list(input_path.glob('*.json')))} fixtures")
-
-if __name__ == '__main__':
-    main()
+    main(args.input_dir, args.output_dir)
 ```
+
+Customize the `run_model` function to call your AI system. The output JSON can include additional fields (like latency or cost under a `meta` key) as long as it matches the evaluators' expectations.
 
 ## Step 4: Configure Evaluators
 
