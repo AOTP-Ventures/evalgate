@@ -1,5 +1,7 @@
 # See README for full reference
-budgets: { p95_latency_ms: 1200, max_cost_usd_per_item: 0.03 }
+budgets:
+  p95_latency_ms: 1200
+  max_cost_usd_per_item: 0.03
 fixtures: { path: "eval/fixtures/**/*.json" }
 outputs:  { path: ".evalgate/outputs/**/*.json" }
 evaluators:
