@@ -1,1 +1,56 @@
-# Example EvalGate configuration - contents to be added later
+# See README for full reference
+
+# Budgets: enforce performance and cost limits for the run
+budgets:
+  p95_latency_ms: 1200        # maximum allowed 95th percentile latency in milliseconds
+  max_cost_usd_per_item: 0.03 # maximum allowed cost per fixture in USD
+
+# Fixtures: where ground-truth fixtures live
+fixtures:
+  path: "eval/fixtures/**/*.json"
+
+# Outputs: where to find model outputs to score
+outputs:
+  path: ".evalgate/outputs/**/*.json"
+
+# Evaluators: scoring rules applied to each output
+# Each evaluator contributes to the overall score with an optional weight
+# and may use schemas, categories, budgets, or even LLMs.
+evaluators:
+  - name: json_formatting      # validates JSON against schema
+    type: SCHEMA
+    schema_path: "eval/schemas/queue_item.json"
+    weight: 0.3
+  - name: priority_accuracy    # compares predicted priority to expected
+    type: CATEGORY
+    expected_field: "priority"
+    weight: 0.3
+  - name: latency_cost         # checks latency and cost budgets
+    type: BUDGETS
+    weight: 0.2
+  # Uncomment and configure with your API key to enable LLM evaluation:
+  # - name: content_quality      # uses an LLM to rate the content
+  #   type: LLM
+  #   provider: openai
+  #   model: "gpt-4"
+  #   prompt_path: "eval/prompts/quality_judge.txt"
+  #   api_key_env_var: "OPENAI_API_KEY"
+  #   weight: 0.2
+
+# Gate: pass/fail criteria for the entire evaluation run
+gate:
+  min_overall_score: 0.90
+  allow_regression: false
+
+# Report: how and where to publish evaluation results
+report:
+  pr_comment: true
+  artifact_path: ".evalgate/results.json"
+
+# Baseline: git reference storing baseline results
+baseline:
+  ref: "origin/main"
+
+# Telemetry: controls sharing of evaluation metrics
+telemetry:
+  mode: "local_only"
