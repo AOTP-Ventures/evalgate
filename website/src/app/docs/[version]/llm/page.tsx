@@ -21,7 +21,7 @@ function getMarkdownFiles(version: string): MarkdownFile[] {
       content: file.content,
       order: file.frontmatter.order
     })).sort((a, b) => a.order - b.order); // Sort by frontmatter order
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -126,7 +126,7 @@ export function generateStaticParams() {
       });
     
     return versions.map(version => ({ version }));
-  } catch (error) {
+  } catch {
     return [];
   }
 }
