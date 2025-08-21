@@ -99,6 +99,12 @@ def run(config: str = typer.Option(..., help="Path to evalgate YAML"),
         rprint("[red]Invalid config:[/red]", e)
         raise typer.Exit(2)
 
+    active_evs = [ev for ev in cfg.evaluators if ev.enabled]
+    if active_evs:
+        rprint("[cyan]Evaluators in use:[/cyan]")
+        for ev in active_evs:
+            rprint(f" - {ev.name} ({ev.type.value})")
+
     fixture_paths = list_paths(cfg.fixtures.path)
     output_paths = list_paths(cfg.outputs.path)
     fixtures = {pathlib.Path(p).stem: read_json(p) for p in fixture_paths}
