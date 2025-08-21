@@ -109,6 +109,16 @@ evaluators:
     min_score: 0.75
 ```
 
+Key parameters:
+
+- `provider`: LLM service (`openai`, `anthropic`, `azure`, `local`)
+- `model`: model name or deployment identifier
+- `prompt_path`: path to the evaluation prompt template
+- `api_key_env_var`: environment variable holding your API key
+- `base_url`: custom endpoint for Azure or local providers
+- `weight`: relative contribution to the overall score
+- `min_score`: minimum score required to pass
+
 ### 4. Set API Key
 
 ```bash
@@ -152,9 +162,10 @@ evalgate run --config .github/evalgate.yml
   provider: azure
   model: gpt-4                    # Your deployment name
   api_key_env_var: AZURE_OPENAI_API_KEY
-  api_base: "https://your-resource.openai.azure.com/"
-  api_version: "2023-12-01-preview"
+  base_url: "https://your-resource.openai.azure.com/"
 ```
+
+EvalGate uses the provider's default API version; override only if you need a specific version.
 
 ### Local/Self-Hosted Models
 ```yaml
@@ -162,7 +173,7 @@ evalgate run --config .github/evalgate.yml
   type: llm
   provider: local
   model: llama-7b-chat           # Your model identifier
-  api_base: "http://localhost:8000/v1"
+  base_url: "http://localhost:8000/v1"
   api_key_env_var: LOCAL_API_KEY # Optional
 ```
 
