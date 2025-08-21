@@ -304,6 +304,27 @@ Multi-turn dialogue validation.
   weight: 0.3
 ```
 
+**Example Fixture & Output:**
+
+Fixture:
+```json
+{
+  "expected": {"content": "4"}
+}
+```
+
+Output:
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is 2 + 2?"},
+    {"role": "assistant", "content": "4"}
+  ]
+}
+```
+
+With `expected_final_field: "content"`, the evaluator compares `expected.content` against the `content` of the final message in `messages`.
+
 **Use Cases:** Chatbots, dialogue systems, conversational AI
 
 ### Tool Usage Evaluator
