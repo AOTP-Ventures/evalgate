@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "evalgate-website",
+  "compatibility_date": "2025-06-01",
+  // Assets-only Worker: no server script. vite-react-ssg prerenders every known
+  // route to real HTML in ./dist; `single-page-application` fallback serves
+  // index.html (200) for any unmatched path so React Router can resolve it
+  // client-side (and render NotFound for genuinely invalid URLs).
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

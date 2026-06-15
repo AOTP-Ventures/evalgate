@@ -4,6 +4,12 @@
 :root {
   --background: #ffffff;
   --foreground: #111827; /* Much darker default text */
+  /* Geist fonts, self-hosted via @fontsource-variable (imported in main.tsx).
+     These replace the CSS variables next/font/google used to inject. */
+  --font-geist-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-geist-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular,
+    "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 @theme inline {

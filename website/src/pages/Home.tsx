@@ -1,9 +1,21 @@
 import { CheckCircle, Zap, CheckSquare } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
+import { Head } from 'vite-react-ssg';
+
+const TITLE = 'EvalGate - Open Source AI Evaluation for GitHub PR Checks';
+const DESCRIPTION =
+  'Free & open source MIT licensed tool for deterministic LLM evaluation. Stop AI regressions before they merge with local-only GitHub Actions. Zero infrastructure required.';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50 to-purple-100">
+      <Head>
+        <title>{TITLE}</title>
+        <meta name="description" content={DESCRIPTION} />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:type" content="website" />
+      </Head>
       {/* Header */}
       <header className="relative px-6 lg:px-8 py-6">
         <nav className="mx-auto flex max-w-7xl items-center justify-between">
@@ -14,9 +26,9 @@ export default function Home() {
             <span className="text-xl font-bold text-gray-900">EvalGate</span>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/docs" className="text-gray-700 hover:text-violet-600 transition-colors">Documentation</Link>
-            <a 
-              href="https://github.com/AOTP-Ventures/evalgate" 
+            <Link to="/docs" className="text-gray-700 hover:text-violet-600 transition-colors">Documentation</Link>
+            <a
+              href="https://github.com/AOTP-Ventures/evalgate"
               className="text-gray-600 hover:text-gray-900 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
@@ -42,17 +54,17 @@ export default function Home() {
           </h1>
           <div className="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium bg-green-100 text-green-800 mb-6">
             <span className="text-green-600 mr-2">🎉</span>
-            Open Source & MIT Licensed
+            Open Source &amp; MIT Licensed
           </div>
           <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Get guardrails for your AI features without the support burden. EvalGate runs deterministic evaluations 
+            Get guardrails for your AI features without the support burden. EvalGate runs deterministic evaluations
             as GitHub PR checks—zero infrastructure, local-only by default, setup in under 10 minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="https://github.com/AOTP-Ventures/evalgate" className="bg-violet-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-violet-700 transition-colors shadow-lg inline-block text-center">
               Get Started on GitHub
             </a>
-            <Link href="/docs" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors inline-block text-center">
+            <Link to="/docs" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors inline-block text-center">
               View Documentation
             </Link>
           </div>
@@ -66,19 +78,19 @@ export default function Home() {
             Catch AI regressions before they ship
           </h2>
           <p className="text-xl text-gray-600 mb-12">
-            Run automated evaluations on every PR. Start with deterministic checks, 
+            Run automated evaluations on every PR. Start with deterministic checks,
             then add LLM-based evaluation when you&apos;re ready.
           </p>
-          
+
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             <div className="bg-green-50 border border-green-200 rounded-xl p-8">
               <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center mb-4 mx-auto">
                 <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Deterministic Checks</h3>
-              <p className="text-gray-600">JSON validation, exact matches, latency & cost budgets. Fast, reliable, zero-cost evaluation.</p>
+              <p className="text-gray-600">JSON validation, exact matches, latency &amp; cost budgets. Fast, reliable, zero-cost evaluation.</p>
             </div>
-            
+
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-8">
               <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4 mx-auto">
                 <span className="text-2xl">🧠</span>
@@ -87,7 +99,7 @@ export default function Home() {
               <p className="text-gray-600">Evaluate quality, tone, accuracy, and domain-specific criteria using GPT-4, Claude, or local models.</p>
             </div>
           </div>
-          
+
           <div className="bg-slate-50 border border-gray-200 rounded-xl p-8">
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
@@ -120,7 +132,7 @@ export default function Home() {
             <a href="https://github.com/AOTP-Ventures/evalgate" className="bg-white text-violet-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg inline-block">
               Get Started on GitHub
             </a>
-            <Link href="/docs" className="border border-violet-400 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-violet-700 transition-colors inline-block">
+            <Link to="/docs" className="border border-violet-400 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-violet-700 transition-colors inline-block">
               View Documentation
             </Link>
           </div>
@@ -144,7 +156,7 @@ export default function Home() {
               <a href="https://github.com/AOTP-Ventures/evalgate/issues" className="text-gray-400 hover:text-white transition-colors">
                 Report Issues
               </a>
-              <Link href="/docs" className="text-gray-400 hover:text-white transition-colors">
+              <Link to="/docs" className="text-gray-400 hover:text-white transition-colors">
                 Documentation
               </Link>
             </div>
