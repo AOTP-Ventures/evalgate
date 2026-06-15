@@ -1,9 +1,6 @@
-'use client';
-
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { NavigationStructure } from '@/lib/navigation';
+import { getNavigation } from '@/content';
 
 interface PreviousNextProps {
   currentSlug: string;
@@ -11,33 +8,18 @@ interface PreviousNextProps {
 }
 
 export function PreviousNext({ currentSlug, version }: PreviousNextProps) {
-  const [navigation, setNavigation] = useState<NavigationStructure | null>(null);
-  
-  // Fetch navigation data when version changes
-  useEffect(() => {
-    const fetchNavigation = async () => {
-      try {
-        const response = await fetch(`/api/docs/${version}/navigation`);
-        if (response.ok) {
-          const navData = await response.json();
-          setNavigation(navData);
-        }
-      } catch (error) {
-        console.error('Failed to fetch navigation:', error);
-      }
-    };
-    
-    fetchNavigation();
-  }, [version]);
-  
-  // Calculate previous/next pages
-  const allPages = navigation ? navigation.sections.flatMap(section => 
-    section.pages.map(page => ({ ...page, section: section.title }))
-  ).sort((a, b) => a.order - b.order) : [];
-  
-  const currentIndex = allPages.findIndex(page => page.slug === currentSlug);
+  const navigation = getNavigation(version);
+
+  // Flatten pages across sections in document order.
+  const allPages = navigation
+    ? navigation.sections
+        .flatMap((section) => section.pages.map((page) => ({ ...page, section: section.title })))
+        .sort((a, b) => a.order - b.order)
+    : [];
+
+  const currentIndex = allPages.findIndex((page) => page.slug === currentSlug);
   const previous = currentIndex > 0 ? allPages[currentIndex - 1] : null;
-  const next = currentIndex < allPages.length - 1 ? allPages[currentIndex + 1] : null;
+  const next = currentIndex >= 0 && currentIndex < allPages.length - 1 ? allPages[currentIndex + 1] : null;
 
   if (!previous && !next) {
     return null;
@@ -50,7 +32,7 @@ export function PreviousNext({ currentSlug, version }: PreviousNextProps) {
         <div className="flex-1 w-full sm:w-auto">
           {previous ? (
             <Link
-              href={`/docs/${version}/${previous.slug}`}
+              to={`/docs/${version}/${previous.slug}`}
               className="group flex items-center text-left p-5 rounded-lg border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors w-full"
             >
               <div className="mr-4 h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center group-hover:bg-violet-200 transition-colors flex-shrink-0">
@@ -65,7 +47,7 @@ export function PreviousNext({ currentSlug, version }: PreviousNextProps) {
               </div>
             </Link>
           ) : (
-            <div /> // Empty div for spacing
+            <div />
           )}
         </div>
 
@@ -73,7 +55,7 @@ export function PreviousNext({ currentSlug, version }: PreviousNextProps) {
         <div className="flex-1 w-full sm:w-auto">
           {next ? (
             <Link
-              href={`/docs/${version}/${next.slug}`}
+              to={`/docs/${version}/${next.slug}`}
               className="group flex items-center text-left p-5 rounded-lg border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors w-full"
             >
               <div className="mr-4 h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center group-hover:bg-violet-200 transition-colors flex-shrink-0">
@@ -88,7 +70,7 @@ export function PreviousNext({ currentSlug, version }: PreviousNextProps) {
               </div>
             </Link>
           ) : (
-            <div /> // Empty div for spacing
+            <div />
           )}
         </div>
       </div>
