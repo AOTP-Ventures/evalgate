@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "evalgate-website",
+  "name": "evalgate",
   "compatibility_date": "2025-06-01",
   // Assets-only Worker: no server script. vite-react-ssg prerenders every known
   // route to real HTML in ./dist; `single-page-application` fallback serves
