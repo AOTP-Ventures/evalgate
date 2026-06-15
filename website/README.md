@@ -78,4 +78,4 @@ index.html, vite.config.ts, wrangler.jsonc
 
 ## License
 
-MIT © AOTP Ventures
+MIT ©2025,2026 AOTP Ventures
